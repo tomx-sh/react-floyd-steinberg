@@ -125,8 +125,8 @@ fn main(@builtin(local_invocation_index) localRow: u32) {
 
 export const displayShader = /* wgsl */ `
 struct DisplayParameters {
-  canvasSize: vec2u,
   logicalSize: vec2u,
+  cellSize: vec2f,
   dark: vec4f,
   light: vec4f,
 }
@@ -143,9 +143,9 @@ fn vertexMain(@builtin(vertex_index) index: u32) -> @builtin(position) vec4f {
 
 @fragment
 fn fragmentMain(@builtin(position) position: vec4f) -> @location(0) vec4f {
-  let safeCanvasSize = max(parameters.canvasSize, vec2u(1u));
   let safeLogicalSize = max(parameters.logicalSize, vec2u(1u));
-  let cell = min(vec2u(position.xy) * safeLogicalSize / safeCanvasSize, safeLogicalSize - vec2u(1u));
+  let safeCellSize = max(parameters.cellSize, vec2f(0.0001));
+  let cell = min(vec2u(position.xy / safeCellSize), safeLogicalSize - vec2u(1u));
   let bit = outputBits[cell.y * safeLogicalSize.x + cell.x];
   return select(parameters.dark, parameters.light, bit != 0u);
 }

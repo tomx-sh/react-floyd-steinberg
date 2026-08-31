@@ -45,7 +45,9 @@ function App() {
   const [status, setStatus] = useState(isWebGpuSupported() ? "Loading image and GPU…" : "WebGPU is unavailable.");
 
   const handleReady = useCallback((info: FloydSteinbergRenderInfo) => {
-    setStatus(`Rendered ${info.logicalWidth} × ${info.logicalHeight} dither cells on the GPU.`);
+    setStatus(
+      `Rendered ${info.logicalWidth} × ${info.logicalHeight} cells for a ${Math.round(info.cssWidth)} × ${Math.round(info.cssHeight)} CSS-pixel canvas.`,
+    );
   }, []);
 
   const handleError = useCallback((error: Error) => {

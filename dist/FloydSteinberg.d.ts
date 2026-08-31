@@ -5,19 +5,27 @@ export type FloydSteinbergSource = string | Blob | ImageBitmap | HTMLImageElemen
 export interface FloydSteinbergRenderInfo {
     canvas: HTMLCanvasElement;
     device: GPUDevice;
+    /** Canvas backing-buffer width in device pixels. */
     width: number;
+    /** Canvas backing-buffer height in device pixels. */
     height: number;
+    /** Rendered canvas content width in CSS pixels. */
+    cssWidth: number;
+    /** Rendered canvas content height in CSS pixels. */
+    cssHeight: number;
+    /** Device-pixel ratio used for the backing buffer. */
+    devicePixelRatio: number;
     logicalWidth: number;
     logicalHeight: number;
 }
 export interface FloydSteinbergProps extends Omit<CanvasHTMLAttributes<HTMLCanvasElement>, "children" | "height" | "onError" | "width"> {
     /** A URL, Blob/File, ImageBitmap, image element, or canvas containing the source image. */
     src: FloydSteinbergSource;
-    /** Output canvas width in pixels. Defaults to the source width. */
+    /** Intrinsic canvas width in CSS pixels. Defaults to the source width. CSS may override it. */
     width?: number;
-    /** Output canvas height in pixels. Defaults to the source height. */
+    /** Intrinsic canvas height in CSS pixels. Defaults to the source height. CSS may override it. */
     height?: number;
-    /** Size of each dither cell in output pixels. */
+    /** Size of each dither cell in CSS pixels. */
     pixelScale?: number;
     /** Perturbs paired diffusion coefficients without changing their total. 0 is classic Floyd–Steinberg. */
     randomness?: number;

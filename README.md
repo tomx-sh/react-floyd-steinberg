@@ -7,18 +7,18 @@ The source can be an image URL, `File`/`Blob`, `ImageBitmap`, image element, or 
 ## Install
 
 ```sh
-npm install github:<github-user>/react-floyd-steinberg#v0.1.0
-pnpm add github:<github-user>/react-floyd-steinberg#v0.1.0
-bun add github:<github-user>/react-floyd-steinberg#v0.1.0
+npm install github:<github-user>/react-floyd-steinberg#v0.2.0
+pnpm add github:<github-user>/react-floyd-steinberg#v0.2.0
+bun add github:<github-user>/react-floyd-steinberg#v0.2.0
 ```
 
 Replace `<github-user>` with the repository owner's GitHub username. The equivalent full Git URL works with all three package managers:
 
 ```sh
-npm install git+https://github.com/<github-user>/react-floyd-steinberg.git#v0.1.0
+npm install git+https://github.com/<github-user>/react-floyd-steinberg.git#v0.2.0
 ```
 
-A tag such as `#v0.1.0` is recommended so application installs remain reproducible. You can instead select:
+A tag such as `#v0.2.0` is recommended so application installs remain reproducible. You can instead select:
 
 - `#main` for the latest commit on the main branch.
 - `#<commit-sha>` for one exact commit.
@@ -29,7 +29,7 @@ The dependency will be stored in the consuming application's `package.json`, for
 ```json
 {
   "dependencies": {
-    "react-floyd-steinberg": "github:<github-user>/react-floyd-steinberg#v0.1.0"
+    "react-floyd-steinberg": "github:<github-user>/react-floyd-steinberg#v0.2.0"
   }
 }
 ```
@@ -59,6 +59,10 @@ export function DitheredPhoto({ file }: { file: File }) {
 
 If only `width` or `height` is supplied, the source aspect ratio is preserved. If neither is supplied, the source image dimensions are used.
 
+`width` and `height` establish the canvas's intrinsic CSS size; they no longer fix the number of dither cells. The component observes its rendered content box, sizes its backing buffer for the current `devicePixelRatio`, and recomputes the diffusion grid whenever that box or ratio changes. Give responsive canvases an explicit CSS constraint, such as `style={{ width: "100%", height: "auto" }}`, so their layout size remains independent from the backing-buffer attributes.
+
+`pixelScale` is measured in CSS pixels. For example, `pixelScale={2}` keeps complete dither cells at `2 × 2` CSS pixels as the component resizes. On a 2× display those cells occupy approximately `4 × 4` device pixels. The final cell on either edge may be clipped when the rendered size is not divisible by `pixelScale`.
+
 Remote image URLs must allow cross-origin use. The component defaults to `crossOrigin="anonymous"`; a server without an appropriate CORS response cannot be copied into a WebGPU texture. Passing a user-selected `File` avoids that restriction.
 
 ## Main props
@@ -66,8 +70,8 @@ Remote image URLs must allow cross-origin use. The component defaults to `crossO
 | Prop | Type | Default | Purpose |
 | --- | --- | --- | --- |
 | `src` | URL, `Blob`/`File`, `ImageBitmap`, image or canvas | required | Source image |
-| `width`, `height` | `number` | source size | Output canvas size |
-| `pixelScale` | `number` | `1` | Output pixels per dither cell; larger values improve speed and emphasize the pattern |
+| `width`, `height` | `number` | source size | Intrinsic canvas size in CSS pixels; CSS may override it |
+| `pixelScale` | `number` | `1` | CSS pixels per dither cell; larger values improve speed and emphasize the pattern |
 | `randomness` | `0…2` | `0.35` | Stochastic coefficient perturbation; `0` is classic Floyd–Steinberg |
 | `threshold` | `0…1` | `0.5` | Binary quantization threshold |
 | `fit` | `"stretch" \| "cover" \| "contain"` | `"contain"` | Source-to-output mapping |
@@ -75,7 +79,7 @@ Remote image URLs must allow cross-origin use. The component defaults to `crossO
 | `seed` | `number` | deterministic | Random coefficient seed |
 | `alphaBackground` | `0…1` | `1` | Luminance behind transparent pixels |
 | `dark`, `light` | normalized RGB/RGBA tuple | black, white | Output colors |
-| `onReady`, `onError` | callback | — | GPU completion and error notifications |
+| `onReady`, `onError` | callback | — | GPU completion and error notifications; ready info includes CSS, backing-buffer, and logical sizes |
 
 Normal canvas attributes such as `className`, `style`, and ARIA attributes are also accepted. The canvas exposes `data-webgpu-status="loading|ready|error"`.
 

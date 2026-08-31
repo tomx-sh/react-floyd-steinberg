@@ -20,8 +20,16 @@ export type FloydSteinbergSource = string | Blob | ImageBitmap | HTMLImageElemen
 export interface FloydSteinbergRenderInfo {
   canvas: HTMLCanvasElement;
   device: GPUDevice;
+  /** Canvas backing-buffer width in device pixels. */
   width: number;
+  /** Canvas backing-buffer height in device pixels. */
   height: number;
+  /** Rendered canvas content width in CSS pixels. */
+  cssWidth: number;
+  /** Rendered canvas content height in CSS pixels. */
+  cssHeight: number;
+  /** Device-pixel ratio used for the backing buffer. */
+  devicePixelRatio: number;
   logicalWidth: number;
   logicalHeight: number;
 }
@@ -30,11 +38,11 @@ export interface FloydSteinbergProps
   extends Omit<CanvasHTMLAttributes<HTMLCanvasElement>, "children" | "height" | "onError" | "width"> {
   /** A URL, Blob/File, ImageBitmap, image element, or canvas containing the source image. */
   src: FloydSteinbergSource;
-  /** Output canvas width in pixels. Defaults to the source width. */
+  /** Intrinsic canvas width in CSS pixels. Defaults to the source width. CSS may override it. */
   width?: number;
-  /** Output canvas height in pixels. Defaults to the source height. */
+  /** Intrinsic canvas height in CSS pixels. Defaults to the source height. CSS may override it. */
   height?: number;
-  /** Size of each dither cell in output pixels. */
+  /** Size of each dither cell in CSS pixels. */
   pixelScale?: number;
   /** Perturbs paired diffusion coefficients without changing their total. 0 is classic Floyd–Steinberg. */
   randomness?: number;
@@ -82,6 +90,14 @@ interface RenderResources {
   displayParameters: GPUBuffer;
   bandParameters: GPUBuffer;
   sourceTexture: GPUTexture;
+}
+
+interface RenderSize {
+  width: number;
+  height: number;
+  cssWidth: number;
+  cssHeight: number;
+  devicePixelRatio: number;
 }
 
 let sharedDevicePromise: Promise<GPUDevice> | undefined;
@@ -275,19 +291,19 @@ function writeComputeParameters(
 function writeDisplayParameters(
   device: GPUDevice,
   buffer: GPUBuffer,
-  width: number,
-  height: number,
   logicalWidth: number,
   logicalHeight: number,
+  cellWidth: number,
+  cellHeight: number,
   dark: FloydSteinbergColor,
   light: FloydSteinbergColor,
 ) {
   const data = new ArrayBuffer(48);
   const view = new DataView(data);
-  view.setUint32(0, width, true);
-  view.setUint32(4, height, true);
-  view.setUint32(8, logicalWidth, true);
-  view.setUint32(12, logicalHeight, true);
+  view.setUint32(0, logicalWidth, true);
+  view.setUint32(4, logicalHeight, true);
+  view.setFloat32(8, cellWidth, true);
+  view.setFloat32(12, cellHeight, true);
   const colors = new Float32Array(data, 16, 8);
   colors.set(normalizedColor(dark), 0);
   colors.set(normalizedColor(light), 4);
@@ -325,6 +341,8 @@ export const FloydSteinberg = forwardRef<HTMLCanvasElement, FloydSteinbergProps>
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const onReadyRef = useRef(onReady);
   const onErrorRef = useRef(onError);
+  const [loadedSource, setLoadedSource] = useState<LoadedSource>();
+  const [renderSize, setRenderSize] = useState<RenderSize>();
   onReadyRef.current = onReady;
   onErrorRef.current = onError;
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
@@ -337,24 +355,110 @@ export const FloydSteinberg = forwardRef<HTMLCanvasElement, FloydSteinbergProps>
   );
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
     let cancelled = false;
-    let loadedSource: LoadedSource | undefined;
+    setStatus("loading");
+    setLoadedSource(undefined);
+    setRenderSize(undefined);
+
+    loadSource(src, crossOrigin)
+      .then((source) => {
+        if (cancelled) {
+          source.dispose?.();
+          return;
+        }
+        if (source.width < 1 || source.height < 1) {
+          source.dispose?.();
+          throw new Error("The source image has no drawable pixels.");
+        }
+        setLoadedSource(source);
+      })
+      .catch((reason: unknown) => {
+        if (cancelled) return;
+        const error = reason instanceof Error ? reason : new Error(String(reason));
+        setStatus("error");
+        onErrorRef.current?.(error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [src, crossOrigin]);
+
+  const intrinsicSize = loadedSource
+    ? resolveOutputSize(loadedSource.width, loadedSource.height, width, height)
+    : { width: positiveInteger(width, 300), height: positiveInteger(height, 150) };
+
+  useEffect(() => {
+    setRenderSize(undefined);
+  }, [width, height]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !loadedSource) return;
+    let lastCssWidth = 0;
+    let lastCssHeight = 0;
+    let resolutionQuery: MediaQueryList | undefined;
+
+    const updateSize = (cssWidth = lastCssWidth, cssHeight = lastCssHeight) => {
+      cssWidth = Math.round(cssWidth * 64) / 64;
+      cssHeight = Math.round(cssHeight * 64) / 64;
+      if (cssWidth <= 0 || cssHeight <= 0) return;
+      lastCssWidth = cssWidth;
+      lastCssHeight = cssHeight;
+      const devicePixelRatio = Math.max(0.01, window.devicePixelRatio || 1);
+      const nextSize: RenderSize = {
+        width: Math.max(1, Math.round(cssWidth * devicePixelRatio)),
+        height: Math.max(1, Math.round(cssHeight * devicePixelRatio)),
+        cssWidth,
+        cssHeight,
+        devicePixelRatio,
+      };
+      setRenderSize((current) =>
+        current &&
+        current.width === nextSize.width &&
+        current.height === nextSize.height &&
+        current.cssWidth === nextSize.cssWidth &&
+        current.cssHeight === nextSize.cssHeight &&
+        current.devicePixelRatio === nextSize.devicePixelRatio
+          ? current
+          : nextSize,
+      );
+    };
+
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) updateSize(entry.contentRect.width, entry.contentRect.height);
+    });
+    observer.observe(canvas);
+
+    const handleResolutionChange = () => {
+      updateSize();
+      resolutionQuery?.removeEventListener("change", handleResolutionChange);
+      resolutionQuery = window.matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`);
+      resolutionQuery.addEventListener("change", handleResolutionChange, { once: true });
+    };
+    window.addEventListener("resize", handleResolutionChange);
+    handleResolutionChange();
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", handleResolutionChange);
+      resolutionQuery?.removeEventListener("change", handleResolutionChange);
+    };
+  }, [loadedSource, intrinsicSize.width, intrinsicSize.height]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !loadedSource || !renderSize) return;
+    let cancelled = false;
     let resources: RenderResources | undefined;
     setStatus("loading");
 
     const render = async () => {
-      loadedSource = await loadSource(src, crossOrigin);
-      if (cancelled) return;
-      if (loadedSource.width < 1 || loadedSource.height < 1) throw new Error("The source image has no drawable pixels.");
-
-      const output = resolveOutputSize(loadedSource.width, loadedSource.height, width, height);
       const resolvedScale = positiveInteger(pixelScale, 1);
-      const logicalWidth = Math.ceil(output.width / resolvedScale);
-      const logicalHeight = Math.ceil(output.height / resolvedScale);
-      canvas.width = output.width;
-      canvas.height = output.height;
+      const logicalWidth = Math.ceil(renderSize.cssWidth / resolvedScale);
+      const logicalHeight = Math.ceil(renderSize.cssHeight / resolvedScale);
+      const cellWidth = (resolvedScale * renderSize.width) / renderSize.cssWidth;
+      const cellHeight = (resolvedScale * renderSize.height) / renderSize.cssHeight;
 
       const device = await getSharedDevice(powerPreference);
       if (cancelled) return;
@@ -362,8 +466,8 @@ export const FloydSteinberg = forwardRef<HTMLCanvasElement, FloydSteinbergProps>
       if (
         loadedSource.width > maxDimension ||
         loadedSource.height > maxDimension ||
-        output.width > maxDimension ||
-        output.height > maxDimension
+        renderSize.width > maxDimension ||
+        renderSize.height > maxDimension
       ) {
         throw new Error(`The source or output exceeds this device's ${maxDimension}px texture limit.`);
       }
@@ -446,7 +550,7 @@ export const FloydSteinberg = forwardRef<HTMLCanvasElement, FloydSteinbergProps>
         seed,
         alphaBackground: clamp(alphaBackground, 0, 1, 1),
       });
-      writeDisplayParameters(device, displayParameters, output.width, output.height, logicalWidth, logicalHeight, dark, light);
+      writeDisplayParameters(device, displayParameters, logicalWidth, logicalHeight, cellWidth, cellHeight, dark, light);
 
       const computeBindGroup = device.createBindGroup({
         label: "Floyd–Steinberg compute bind group",
@@ -497,7 +601,7 @@ export const FloydSteinberg = forwardRef<HTMLCanvasElement, FloydSteinbergProps>
       if (cancelled) return;
 
       setStatus("ready");
-      onReadyRef.current?.({ canvas, device, width: output.width, height: output.height, logicalWidth, logicalHeight });
+      onReadyRef.current?.({ canvas, device, ...renderSize, logicalWidth, logicalHeight });
     };
 
     render().catch((reason: unknown) => {
@@ -509,13 +613,11 @@ export const FloydSteinberg = forwardRef<HTMLCanvasElement, FloydSteinbergProps>
 
     return () => {
       cancelled = true;
-      loadedSource?.dispose?.();
       destroyResources(resources);
     };
   }, [
-    src,
-    width,
-    height,
+    loadedSource,
+    renderSize,
     pixelScale,
     randomness,
     threshold,
@@ -531,16 +633,22 @@ export const FloydSteinberg = forwardRef<HTMLCanvasElement, FloydSteinbergProps>
     light[1],
     light[2],
     light[3],
-    crossOrigin,
     powerPreference,
   ]);
+
+  useEffect(
+    () => () => {
+      loadedSource?.dispose?.();
+    },
+    [loadedSource],
+  );
 
   return (
     <canvas
       {...canvasProps}
       ref={assignRef}
-      width={width ?? 300}
-      height={height ?? 150}
+      width={renderSize?.width ?? intrinsicSize.width}
+      height={renderSize?.height ?? intrinsicSize.height}
       aria-label={ariaLabel}
       data-webgpu-status={status}
     />
