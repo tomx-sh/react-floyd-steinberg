@@ -1,0 +1,56 @@
+{
+  "name": "react-floyd-steinberg",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A WebGPU stochastic Floyd-Steinberg image dithering component for React.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "build:demo": "vite build --mode demo",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@typescript/typescript6": "^6.0.2",
+    "@vitejs/plugin-react": "^6.1.1",
+    "@webgpu/types": "^0.1.72",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2",
+    "vite-plugin-dts": "^5.0.3"
+  },
+  "keywords": [
+    "react",
+    "webgpu",
+    "dithering",
+    "floyd-steinberg",
+    "image-processing"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}
