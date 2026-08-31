@@ -7,18 +7,18 @@ The source can be an image URL, `File`/`Blob`, `ImageBitmap`, image element, or 
 ## Install
 
 ```sh
-npm install github:<github-user>/react-floyd-steinberg#v0.2.0
-pnpm add github:<github-user>/react-floyd-steinberg#v0.2.0
-bun add github:<github-user>/react-floyd-steinberg#v0.2.0
+npm install github:<github-user>/react-floyd-steinberg#v0.2.1
+pnpm add github:<github-user>/react-floyd-steinberg#v0.2.1
+bun add github:<github-user>/react-floyd-steinberg#v0.2.1
 ```
 
 Replace `<github-user>` with the repository owner's GitHub username. The equivalent full Git URL works with all three package managers:
 
 ```sh
-npm install git+https://github.com/<github-user>/react-floyd-steinberg.git#v0.2.0
+npm install git+https://github.com/<github-user>/react-floyd-steinberg.git#v0.2.1
 ```
 
-A tag such as `#v0.2.0` is recommended so application installs remain reproducible. You can instead select:
+A tag such as `#v0.2.1` is recommended so application installs remain reproducible. You can instead select:
 
 - `#main` for the latest commit on the main branch.
 - `#<commit-sha>` for one exact commit.
@@ -29,7 +29,7 @@ The dependency will be stored in the consuming application's `package.json`, for
 ```json
 {
   "dependencies": {
-    "react-floyd-steinberg": "github:<github-user>/react-floyd-steinberg#v0.2.0"
+    "react-floyd-steinberg": "github:<github-user>/react-floyd-steinberg#v0.2.1"
   }
 }
 ```
@@ -50,6 +50,8 @@ export function DitheredPhoto({ file }: { file: File }) {
       randomness={0.35}
       threshold={0.5}
       fit="contain"
+      dark="oklch(20% 0.03 260)"
+      light="rgb(245 240 220)"
       style={{ width: "100%", height: "auto" }}
       onError={console.error}
     />
@@ -78,10 +80,20 @@ Remote image URLs must allow cross-origin use. The component defaults to `crossO
 | `invert` | `boolean` | `false` | Invert luminance before diffusion |
 | `seed` | `number` | deterministic | Random coefficient seed |
 | `alphaBackground` | `0…1` | `1` | Luminance behind transparent pixels |
-| `dark`, `light` | normalized RGB/RGBA tuple | black, white | Output colors |
+| `dark`, `light` | CSS color string or normalized RGB/RGBA tuple | black, white | Output colors |
 | `onReady`, `onError` | callback | — | GPU completion and error notifications; ready info includes CSS, backing-buffer, and logical sizes |
 
 Normal canvas attributes such as `className`, `style`, and ARIA attributes are also accepted. The canvas exposes `data-webgpu-status="loading|ready|error"`.
+
+`dark` and `light` accept normalized tuples such as `[0.1, 0.2, 0.3]` as well as browser-supported CSS colors, including `rgb()` and `oklch()` strings. CSS colors are converted to sRGB before being sent to WebGPU:
+
+```tsx
+<FloydSteinberg
+  src={file}
+  dark="rgb(18 24 38 / 90%)"
+  light="oklch(92% 0.08 85)"
+/>
+```
 
 The package additionally exports `floydSteinbergShader`, `displayShader`, and `isWebGpuSupported`.
 

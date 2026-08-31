@@ -1,5 +1,5 @@
 import { CanvasHTMLAttributes } from 'react';
-export type FloydSteinbergColor = readonly [number, number, number] | readonly [number, number, number, number];
+export type FloydSteinbergColor = string | readonly [number, number, number] | readonly [number, number, number, number];
 export type FloydSteinbergFit = "stretch" | "cover" | "contain";
 export type FloydSteinbergSource = string | Blob | ImageBitmap | HTMLImageElement | HTMLCanvasElement | OffscreenCanvas;
 export interface FloydSteinbergRenderInfo {
@@ -39,9 +39,9 @@ export interface FloydSteinbergProps extends Omit<CanvasHTMLAttributes<HTMLCanva
     seed?: number;
     /** Luminance behind transparent source pixels, from 0 to 1. */
     alphaBackground?: number;
-    /** RGBA values in the 0–1 range for dark output pixels. */
+    /** A CSS color string or RGB/RGBA values in the 0–1 range for dark output pixels. */
     dark?: FloydSteinbergColor;
-    /** RGBA values in the 0–1 range for light output pixels. */
+    /** A CSS color string or RGB/RGBA values in the 0–1 range for light output pixels. */
     light?: FloydSteinbergColor;
     /** Cross-origin mode used when src is a URL. */
     crossOrigin?: "" | "anonymous" | "use-credentials";

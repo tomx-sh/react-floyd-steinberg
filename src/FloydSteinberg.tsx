@@ -12,8 +12,12 @@ import { displayShader, floydSteinbergShader } from "./shaders";
 const BAND_ROWS = 256;
 const DEFAULT_DARK: FloydSteinbergColor = [0, 0, 0, 1];
 const DEFAULT_LIGHT: FloydSteinbergColor = [1, 1, 1, 1];
+let cssColorContext: CanvasRenderingContext2D | undefined;
 
-export type FloydSteinbergColor = readonly [number, number, number] | readonly [number, number, number, number];
+export type FloydSteinbergColor =
+  | string
+  | readonly [number, number, number]
+  | readonly [number, number, number, number];
 export type FloydSteinbergFit = "stretch" | "cover" | "contain";
 export type FloydSteinbergSource = string | Blob | ImageBitmap | HTMLImageElement | HTMLCanvasElement | OffscreenCanvas;
 
@@ -56,9 +60,9 @@ export interface FloydSteinbergProps
   seed?: number;
   /** Luminance behind transparent source pixels, from 0 to 1. */
   alphaBackground?: number;
-  /** RGBA values in the 0–1 range for dark output pixels. */
+  /** A CSS color string or RGB/RGBA values in the 0–1 range for dark output pixels. */
   dark?: FloydSteinbergColor;
-  /** RGBA values in the 0–1 range for light output pixels. */
+  /** A CSS color string or RGB/RGBA values in the 0–1 range for light output pixels. */
   light?: FloydSteinbergColor;
   /** Cross-origin mode used when src is a URL. */
   crossOrigin?: "" | "anonymous" | "use-credentials";
@@ -238,13 +242,47 @@ function resolveOutputSize(sourceWidth: number, sourceHeight: number, width?: nu
   return { width: positiveInteger(sourceWidth, 1), height: positiveInteger(sourceHeight, 1) };
 }
 
-function normalizedColor(color: FloydSteinbergColor): [number, number, number, number] {
+function normalizedCssColor(color: string): readonly [number, number, number, number] {
+  const value = color.trim();
+  if (!cssColorContext) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    cssColorContext = canvas.getContext("2d", { willReadFrequently: true }) ?? undefined;
+  }
+  if (!cssColorContext) {
+    throw new Error("CSS colors could not be resolved because a 2D canvas context is unavailable.");
+  }
+
+  // An invalid assignment leaves fillStyle unchanged. Trying it from two
+  // different sentinels distinguishes invalid colors from any valid color.
+  cssColorContext.fillStyle = "#010203";
+  cssColorContext.fillStyle = value;
+  const firstResult = cssColorContext.fillStyle;
+  cssColorContext.fillStyle = "#040506";
+  cssColorContext.fillStyle = value;
+  if (!value || cssColorContext.fillStyle !== firstResult) {
+    throw new Error(`Invalid CSS color: ${JSON.stringify(color)}.`);
+  }
+
+  cssColorContext.clearRect(0, 0, 1, 1);
+  cssColorContext.fillRect(0, 0, 1, 1);
+  const [red, green, blue, alpha] = cssColorContext.getImageData(0, 0, 1, 1).data;
+  return [red / 255, green / 255, blue / 255, alpha / 255];
+}
+
+function normalizedColor(color: FloydSteinbergColor): readonly [number, number, number, number] {
+  if (typeof color === "string") return normalizedCssColor(color);
   return [
     clamp(color[0], 0, 1, 0),
     clamp(color[1], 0, 1, 0),
     clamp(color[2], 0, 1, 0),
     clamp(color[3] ?? 1, 0, 1, 1),
   ];
+}
+
+function colorDependency(color: FloydSteinbergColor): string {
+  return typeof color === "string" ? `css:${color}` : `tuple:${color.join(",")}`;
 }
 
 function destroyResources(resources: RenderResources | undefined) {
@@ -343,6 +381,8 @@ export const FloydSteinberg = forwardRef<HTMLCanvasElement, FloydSteinbergProps>
   const onErrorRef = useRef(onError);
   const [loadedSource, setLoadedSource] = useState<LoadedSource>();
   const [renderSize, setRenderSize] = useState<RenderSize>();
+  const darkDependency = colorDependency(dark);
+  const lightDependency = colorDependency(light);
   onReadyRef.current = onReady;
   onErrorRef.current = onError;
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
@@ -625,14 +665,8 @@ export const FloydSteinberg = forwardRef<HTMLCanvasElement, FloydSteinbergProps>
     invert,
     seed,
     alphaBackground,
-    dark[0],
-    dark[1],
-    dark[2],
-    dark[3],
-    light[0],
-    light[1],
-    light[2],
-    light[3],
+    darkDependency,
+    lightDependency,
     powerPreference,
   ]);
 

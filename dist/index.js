@@ -11,21 +11,21 @@ var o = "\nstruct Parameters {\n  outputSize: vec2u,\n  sourceSize: vec2u,\n  fi
 	1,
 	1,
 	1
-], d, f = /* @__PURE__ */ new WeakMap();
-function p() {
+], d, f, p = /* @__PURE__ */ new WeakMap();
+function m() {
 	return typeof navigator < "u" && "gpu" in navigator;
 }
-async function m(e) {
-	if (!p()) throw Error("WebGPU is not available in this browser.");
-	return d ||= navigator.gpu.requestAdapter({ powerPreference: e }).then(async (e) => {
+async function h(e) {
+	if (!m()) throw Error("WebGPU is not available in this browser.");
+	return f ||= navigator.gpu.requestAdapter({ powerPreference: e }).then(async (e) => {
 		if (!e) throw Error("No compatible WebGPU adapter was found.");
 		let t = await e.requestDevice();
 		return t.lost.then(() => {
-			d = void 0;
+			f = void 0;
 		}), t;
-	}), d;
+	}), f;
 }
-async function h(e, t, n) {
+async function g(e, t, n) {
 	let r = e.createShaderModule({
 		label: t,
 		code: n
@@ -33,12 +33,12 @@ async function h(e, t, n) {
 	if (i.length > 0) throw Error(i.map((e) => `${t}: ${e.message}`).join("\n"));
 	return r;
 }
-function g(e, t) {
-	let n = f.get(e);
-	n || (n = /* @__PURE__ */ new Map(), f.set(e, n));
+function _(e, t) {
+	let n = p.get(e);
+	n || (n = /* @__PURE__ */ new Map(), p.set(e, n));
 	let r = n.get(t);
 	return r || (r = (async () => {
-		let [n, r] = await Promise.all([h(e, "Stochastic Floyd–Steinberg WGSL", o), h(e, "Floyd–Steinberg display WGSL", s)]), i = e.createBindGroupLayout({
+		let [n, r] = await Promise.all([g(e, "Stochastic Floyd–Steinberg WGSL", o), g(e, "Floyd–Steinberg display WGSL", s)]), i = e.createBindGroupLayout({
 			label: "Floyd–Steinberg bindings",
 			entries: [
 				{
@@ -99,7 +99,7 @@ function g(e, t) {
 		};
 	})(), n.set(t, r)), r;
 }
-function _(e) {
+function v(e) {
 	return typeof HTMLImageElement < "u" && e instanceof HTMLImageElement ? {
 		width: e.naturalWidth,
 		height: e.naturalHeight
@@ -108,7 +108,7 @@ function _(e) {
 		height: e.height
 	};
 }
-async function v(e, t) {
+async function y(e, t) {
 	if (typeof e == "string") {
 		let n = new Image();
 		return n.crossOrigin = t ?? "anonymous", n.decoding = "async", n.src = e, await n.decode(), {
@@ -127,55 +127,77 @@ async function v(e, t) {
 		};
 	}
 	typeof HTMLImageElement < "u" && e instanceof HTMLImageElement && !e.complete && await e.decode();
-	let { width: n, height: r } = _(e);
+	let { width: n, height: r } = v(e);
 	return {
 		source: e,
 		width: n,
 		height: r
 	};
 }
-function y(e, t, n, r) {
+function b(e, t, n, r) {
 	return Number.isFinite(e) ? Math.min(n, Math.max(t, e)) : r;
 }
-function b(e, t) {
+function x(e, t) {
 	return Math.max(1, Math.round(Number.isFinite(e) ? e : t));
 }
-function x(e, t, n, r) {
+function S(e, t, n, r) {
 	if (n !== void 0 && r !== void 0) return {
-		width: b(n, e),
-		height: b(r, t)
+		width: x(n, e),
+		height: x(r, t)
 	};
 	if (n !== void 0) {
-		let r = b(n, e);
+		let r = x(n, e);
 		return {
 			width: r,
-			height: b(r * t / e, t)
+			height: x(r * t / e, t)
 		};
 	}
 	if (r !== void 0) {
-		let n = b(r, t);
+		let n = x(r, t);
 		return {
-			width: b(n * e / t, e),
+			width: x(n * e / t, e),
 			height: n
 		};
 	}
 	return {
-		width: b(e, 1),
-		height: b(t, 1)
+		width: x(e, 1),
+		height: x(t, 1)
 	};
 }
-function S(e) {
+function C(e) {
+	let t = e.trim();
+	if (!d) {
+		let e = document.createElement("canvas");
+		e.width = 1, e.height = 1, d = e.getContext("2d", { willReadFrequently: !0 }) ?? void 0;
+	}
+	if (!d) throw Error("CSS colors could not be resolved because a 2D canvas context is unavailable.");
+	d.fillStyle = "#010203", d.fillStyle = t;
+	let n = d.fillStyle;
+	if (d.fillStyle = "#040506", d.fillStyle = t, !t || d.fillStyle !== n) throw Error(`Invalid CSS color: ${JSON.stringify(e)}.`);
+	d.clearRect(0, 0, 1, 1), d.fillRect(0, 0, 1, 1);
+	let [r, i, a, o] = d.getImageData(0, 0, 1, 1).data;
 	return [
-		y(e[0], 0, 1, 0),
-		y(e[1], 0, 1, 0),
-		y(e[2], 0, 1, 0),
-		y(e[3] ?? 1, 0, 1, 1)
+		r / 255,
+		i / 255,
+		a / 255,
+		o / 255
 	];
 }
-function C(e) {
+function w(e) {
+	return typeof e == "string" ? C(e) : [
+		b(e[0], 0, 1, 0),
+		b(e[1], 0, 1, 0),
+		b(e[2], 0, 1, 0),
+		b(e[3] ?? 1, 0, 1, 1)
+	];
+}
+function T(e) {
+	return typeof e == "string" ? `css:${e}` : `tuple:${e.join(",")}`;
+}
+function E(e) {
 	e && (e.output.destroy(), e.errors.destroy(), e.computeParameters.destroy(), e.displayParameters.destroy(), e.bandParameters.destroy(), e.sourceTexture.destroy());
 }
-function w(e, t, n) {
+function D(e, t, n) {
 	let r = /* @__PURE__ */ new ArrayBuffer(48), i = new DataView(r);
 	i.setUint32(0, n.logicalWidth, !0), i.setUint32(4, n.logicalHeight, !0), i.setUint32(8, n.sourceWidth, !0), i.setUint32(12, n.sourceHeight, !0), i.setUint32(16, {
 		stretch: 0,
@@ -183,47 +205,47 @@ function w(e, t, n) {
 		contain: 2
 	}[n.fit], !0), i.setUint32(20, +!!n.invert, !0), i.setFloat32(24, n.threshold, !0), i.setFloat32(28, n.randomness, !0), i.setUint32(32, n.seed >>> 0, !0), i.setFloat32(36, n.alphaBackground, !0), e.queue.writeBuffer(t, 0, r);
 }
-function T(e, t, n, r, i, a, o, s) {
+function O(e, t, n, r, i, a, o, s) {
 	let c = /* @__PURE__ */ new ArrayBuffer(48), l = new DataView(c);
 	l.setUint32(0, n, !0), l.setUint32(4, r, !0), l.setFloat32(8, i, !0), l.setFloat32(12, a, !0);
 	let u = new Float32Array(c, 16, 8);
-	u.set(S(o), 0), u.set(S(s), 4), e.queue.writeBuffer(t, 0, c);
+	u.set(w(o), 0), u.set(w(s), 4), e.queue.writeBuffer(t, 0, c);
 }
-function E(e, t) {
+function k(e, t) {
 	typeof e == "function" ? e(t) : e && (e.current = t);
 }
-var D = e(function({ src: e, width: o, height: s, pixelScale: d = 1, randomness: f = .35, threshold: p = .5, fit: h = "contain", invert: _ = !1, seed: S = 1592594996, alphaBackground: D = 1, dark: O = l, light: k = u, crossOrigin: A = "anonymous", powerPreference: j = "high-performance", onReady: M, onError: N, "aria-label": P = "Floyd–Steinberg dithered image", ...F }, I) {
-	let L = r(null), R = r(M), z = r(N), [B, V] = i(), [H, U] = i();
-	R.current = M, z.current = N;
-	let [W, G] = i("loading"), K = t((e) => {
-		L.current = e, E(I, e);
-	}, [I]);
+var A = e(function({ src: e, width: o, height: s, pixelScale: d = 1, randomness: f = .35, threshold: p = .5, fit: m = "contain", invert: g = !1, seed: v = 1592594996, alphaBackground: C = 1, dark: w = l, light: A = u, crossOrigin: j = "anonymous", powerPreference: M = "high-performance", onReady: N, onError: P, "aria-label": F = "Floyd–Steinberg dithered image", ...I }, L) {
+	let R = r(null), z = r(N), B = r(P), [V, H] = i(), [U, W] = i(), G = T(w), K = T(A);
+	z.current = N, B.current = P;
+	let [q, J] = i("loading"), Y = t((e) => {
+		R.current = e, k(L, e);
+	}, [L]);
 	n(() => {
 		let t = !1;
-		return G("loading"), V(void 0), U(void 0), v(e, A).then((e) => {
+		return J("loading"), H(void 0), W(void 0), y(e, j).then((e) => {
 			if (t) {
 				e.dispose?.();
 				return;
 			}
 			if (e.width < 1 || e.height < 1) throw e.dispose?.(), Error("The source image has no drawable pixels.");
-			V(e);
+			H(e);
 		}).catch((e) => {
 			if (t) return;
 			let n = e instanceof Error ? e : Error(String(e));
-			G("error"), z.current?.(n);
+			J("error"), B.current?.(n);
 		}), () => {
 			t = !0;
 		};
-	}, [e, A]);
-	let q = B ? x(B.width, B.height, o, s) : {
-		width: b(o, 300),
-		height: b(s, 150)
+	}, [e, j]);
+	let X = V ? S(V.width, V.height, o, s) : {
+		width: x(o, 300),
+		height: x(s, 150)
 	};
 	return n(() => {
-		U(void 0);
+		W(void 0);
 	}, [o, s]), n(() => {
-		let e = L.current;
-		if (!e || !B) return;
+		let e = R.current;
+		if (!e || !V) return;
 		let t = 0, n = 0, r, i = (e = t, r = n) => {
 			if (e = Math.round(e * 64) / 64, r = Math.round(r * 64) / 64, e <= 0 || r <= 0) return;
 			t = e, n = r;
@@ -234,7 +256,7 @@ var D = e(function({ src: e, width: o, height: s, pixelScale: d = 1, randomness:
 				cssHeight: r,
 				devicePixelRatio: i
 			};
-			U((e) => e && e.width === a.width && e.height === a.height && e.cssWidth === a.cssWidth && e.cssHeight === a.cssHeight && e.devicePixelRatio === a.devicePixelRatio ? e : a);
+			W((e) => e && e.width === a.width && e.height === a.height && e.cssWidth === a.cssWidth && e.cssHeight === a.cssHeight && e.devicePixelRatio === a.devicePixelRatio ? e : a);
 		}, a = new ResizeObserver(([e]) => {
 			e && i(e.contentRect.width, e.contentRect.height);
 		});
@@ -246,37 +268,37 @@ var D = e(function({ src: e, width: o, height: s, pixelScale: d = 1, randomness:
 			a.disconnect(), window.removeEventListener("resize", o), r?.removeEventListener("change", o);
 		};
 	}, [
-		B,
-		q.width,
-		q.height
+		V,
+		X.width,
+		X.height
 	]), n(() => {
-		let e = L.current;
-		if (!e || !B || !H) return;
+		let e = R.current;
+		if (!e || !V || !U) return;
 		let t = !1, n;
-		return G("loading"), (async () => {
-			let r = b(d, 1), i = Math.ceil(H.cssWidth / r), a = Math.ceil(H.cssHeight / r), o = r * H.width / H.cssWidth, s = r * H.height / H.cssHeight, l = await m(j);
+		return J("loading"), (async () => {
+			let r = x(d, 1), i = Math.ceil(U.cssWidth / r), a = Math.ceil(U.cssHeight / r), o = r * U.width / U.cssWidth, s = r * U.height / U.cssHeight, l = await h(M);
 			if (t) return;
 			let u = l.limits.maxTextureDimension2D;
-			if (B.width > u || B.height > u || H.width > u || H.height > u) throw Error(`The source or output exceeds this device's ${u}px texture limit.`);
-			let v = Math.max(4, i * a * 4);
-			if (v > l.limits.maxStorageBufferBindingSize) throw Error("The requested output exceeds this device's storage-buffer limit. Increase pixelScale.");
-			let x = e.getContext("webgpu");
-			if (!x) throw Error("The canvas could not create a WebGPU context.");
-			let C = navigator.gpu.getPreferredCanvasFormat();
-			x.configure({
+			if (V.width > u || V.height > u || U.width > u || U.height > u) throw Error(`The source or output exceeds this device's ${u}px texture limit.`);
+			let y = Math.max(4, i * a * 4);
+			if (y > l.limits.maxStorageBufferBindingSize) throw Error("The requested output exceeds this device's storage-buffer limit. Increase pixelScale.");
+			let S = e.getContext("webgpu");
+			if (!S) throw Error("The canvas could not create a WebGPU context.");
+			let T = navigator.gpu.getPreferredCanvasFormat();
+			S.configure({
 				device: l,
-				format: C,
+				format: T,
 				alphaMode: "premultiplied"
 			});
-			let E = await g(l, C);
+			let E = await _(l, T);
 			if (t) return;
-			let A = l.createBuffer({
+			let k = l.createBuffer({
 				label: "Floyd–Steinberg output",
-				size: v,
+				size: y,
 				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-			}), M = l.createBuffer({
+			}), j = l.createBuffer({
 				label: "Floyd–Steinberg errors",
-				size: v,
+				size: y,
 				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
 			}), N = l.createBuffer({
 				label: "Floyd–Steinberg parameters",
@@ -286,40 +308,40 @@ var D = e(function({ src: e, width: o, height: s, pixelScale: d = 1, randomness:
 				label: "Floyd–Steinberg display parameters",
 				size: 48,
 				usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-			}), F = Math.ceil(a / c), I = l.limits.minUniformBufferOffsetAlignment, L = new ArrayBuffer(I * F), z = new DataView(L);
+			}), F = Math.ceil(a / c), I = l.limits.minUniformBufferOffsetAlignment, L = new ArrayBuffer(I * F), R = new DataView(L);
 			for (let e = 0; e < F; e += 1) {
 				let t = e * c;
-				z.setUint32(e * I, t, !0), z.setUint32(e * I + 4, Math.min(c, a - t), !0);
+				R.setUint32(e * I, t, !0), R.setUint32(e * I + 4, Math.min(c, a - t), !0);
 			}
-			let V = l.createBuffer({
+			let B = l.createBuffer({
 				label: "Floyd–Steinberg band parameters",
 				size: L.byteLength,
 				usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-			}), U = l.createTexture({
+			}), H = l.createTexture({
 				label: "Floyd–Steinberg source image",
-				size: [B.width, B.height],
+				size: [V.width, V.height],
 				format: "rgba8unorm",
 				usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
 			});
 			n = {
-				output: A,
-				errors: M,
+				output: k,
+				errors: j,
 				computeParameters: N,
 				displayParameters: P,
-				bandParameters: V,
-				sourceTexture: U
-			}, l.queue.copyExternalImageToTexture({ source: B.source }, { texture: U }, [B.width, B.height]), l.queue.writeBuffer(V, 0, L), w(l, N, {
+				bandParameters: B,
+				sourceTexture: H
+			}, l.queue.copyExternalImageToTexture({ source: V.source }, { texture: H }, [V.width, V.height]), l.queue.writeBuffer(B, 0, L), D(l, N, {
 				logicalWidth: i,
 				logicalHeight: a,
-				sourceWidth: B.width,
-				sourceHeight: B.height,
-				fit: h,
-				invert: _,
-				threshold: y(p, 0, 1, .5),
-				randomness: y(f, 0, 2, .35),
-				seed: S,
-				alphaBackground: y(D, 0, 1, 1)
-			}), T(l, P, i, a, o, s, O, k);
+				sourceWidth: V.width,
+				sourceHeight: V.height,
+				fit: m,
+				invert: g,
+				threshold: b(p, 0, 1, .5),
+				randomness: b(f, 0, 2, .35),
+				seed: v,
+				alphaBackground: b(C, 0, 1, 1)
+			}), O(l, P, i, a, o, s, w, A);
 			let W = l.createBindGroup({
 				label: "Floyd–Steinberg compute bind group",
 				layout: E.computeLayout,
@@ -330,25 +352,25 @@ var D = e(function({ src: e, width: o, height: s, pixelScale: d = 1, randomness:
 					},
 					{
 						binding: 1,
-						resource: { buffer: A }
+						resource: { buffer: k }
 					},
 					{
 						binding: 2,
-						resource: { buffer: M }
+						resource: { buffer: j }
 					},
 					{
 						binding: 3,
 						resource: {
-							buffer: V,
+							buffer: B,
 							size: 16
 						}
 					},
 					{
 						binding: 4,
-						resource: U.createView()
+						resource: H.createView()
 					}
 				]
-			}), K = l.createBindGroup({
+			}), G = l.createBindGroup({
 				label: "Floyd–Steinberg display bind group",
 				layout: E.display.getBindGroupLayout(0),
 				entries: [{
@@ -356,18 +378,18 @@ var D = e(function({ src: e, width: o, height: s, pixelScale: d = 1, randomness:
 					resource: { buffer: P }
 				}, {
 					binding: 1,
-					resource: { buffer: A }
+					resource: { buffer: k }
 				}]
-			}), q = l.createCommandEncoder({ label: "Floyd–Steinberg render" });
-			q.clearBuffer(M);
+			}), K = l.createCommandEncoder({ label: "Floyd–Steinberg render" });
+			K.clearBuffer(j);
 			for (let e = 0; e < F; e += 1) {
-				let t = q.beginComputePass({ label: `Floyd–Steinberg band ${e}` });
+				let t = K.beginComputePass({ label: `Floyd–Steinberg band ${e}` });
 				t.setPipeline(E.compute), t.setBindGroup(0, W, [e * I]), t.dispatchWorkgroups(1), t.end();
 			}
-			let J = q.beginRenderPass({
+			let q = K.beginRenderPass({
 				label: "Floyd–Steinberg display pass",
 				colorAttachments: [{
-					view: x.getCurrentTexture().createView(),
+					view: S.getCurrentTexture().createView(),
 					clearValue: {
 						r: 0,
 						g: 0,
@@ -378,49 +400,43 @@ var D = e(function({ src: e, width: o, height: s, pixelScale: d = 1, randomness:
 					storeOp: "store"
 				}]
 			});
-			J.setPipeline(E.display), J.setBindGroup(0, K), J.draw(3), J.end(), l.queue.submit([q.finish()]), await l.queue.onSubmittedWorkDone(), !t && (G("ready"), R.current?.({
+			q.setPipeline(E.display), q.setBindGroup(0, G), q.draw(3), q.end(), l.queue.submit([K.finish()]), await l.queue.onSubmittedWorkDone(), !t && (J("ready"), z.current?.({
 				canvas: e,
 				device: l,
-				...H,
+				...U,
 				logicalWidth: i,
 				logicalHeight: a
 			}));
 		})().catch((e) => {
 			if (t) return;
 			let n = e instanceof Error ? e : Error(String(e));
-			G("error"), z.current?.(n);
+			J("error"), B.current?.(n);
 		}), () => {
-			t = !0, C(n);
+			t = !0, E(n);
 		};
 	}, [
-		B,
-		H,
+		V,
+		U,
 		d,
 		f,
 		p,
-		h,
-		_,
-		S,
-		D,
-		O[0],
-		O[1],
-		O[2],
-		O[3],
-		k[0],
-		k[1],
-		k[2],
-		k[3],
-		j
+		m,
+		g,
+		v,
+		C,
+		G,
+		K,
+		M
 	]), n(() => () => {
-		B?.dispose?.();
-	}, [B]), /* @__PURE__ */ a("canvas", {
-		...F,
-		ref: K,
-		width: H?.width ?? q.width,
-		height: H?.height ?? q.height,
-		"aria-label": P,
-		"data-webgpu-status": W
+		V?.dispose?.();
+	}, [V]), /* @__PURE__ */ a("canvas", {
+		...I,
+		ref: Y,
+		width: U?.width ?? X.width,
+		height: U?.height ?? X.height,
+		"aria-label": F,
+		"data-webgpu-status": q
 	});
 });
 //#endregion
-export { D as FloydSteinberg, s as displayShader, o as floydSteinbergShader, p as isWebGpuSupported };
+export { A as FloydSteinberg, s as displayShader, o as floydSteinbergShader, m as isWebGpuSupported };
