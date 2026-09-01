@@ -119,7 +119,7 @@ export function DitheredWave() {
 }
 ```
 
-`patternSize` sets the width and height of the square pattern in dither cells and is clamped to `8…256`. Pattern generation wraps both axes as a torus, then the shader repeats that tile across the canvas. Because `pixelScale` is measured in CSS pixels, both the dots and the complete tile keep a stable CSS size across display densities and responsive resizing. The pattern is deterministic for a given `patternSize` and `seed` and is cached after its first generation.
+`patternSize` sets the width and height of the square pattern in dither cells and is clamped to `8…128`. Pattern generation wraps both axes as a torus, then the shader repeats that tile across the canvas. It starts with an exact rank permutation and refines nested threshold levels through several toroidal Gaussian cluster-to-void swap passes. Because `pixelScale` is measured in CSS pixels, both the dots and the complete tile keep a stable CSS size across display densities and responsive resizing. The pattern is deterministic for a given `patternSize` and `seed` and is cached after its first generation.
 
 The component accepts the relevant sizing, color, inversion, seed, canvas, and callback props from `FloydSteinberg`. It omits image and error-diffusion props such as `src`, `fit`, `crossOrigin`, `alphaBackground`, `randomness`, and `threshold`.
 

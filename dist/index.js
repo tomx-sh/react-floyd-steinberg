@@ -443,16 +443,87 @@ var M = e(function({ src: e, width: o, height: s, pixelScale: c = 1, randomness:
 		"aria-label": F,
 		"data-webgpu-status": q
 	});
-}), N = /* @__PURE__ */ new Map();
-function P(e, t) {
+}), N = /* @__PURE__ */ new Map(), P = 8, F = 6;
+function I(e, t) {
 	let n = new Float64Array(e), r = t >>> 0 || 1;
 	for (let t = 0; t < e; t += 1) r ^= r << 13, r ^= r >>> 17, r ^= r << 5, n[t] = (r >>> 0) / 4294967296;
 	return n;
 }
-function F(e, t) {
+function L(e, t) {
+	let n = new Float64Array(t * 2 + 1), r = 0;
+	for (let i = -t; i <= t; i += 1) {
+		let a = Math.exp(-(i * i) / (2 * e * e));
+		n[i + t] = a, r += a;
+	}
+	for (let e = 0; e < n.length; e += 1) n[e] /= r;
+	return n;
+}
+function R(e, t, n, r, i) {
+	let a = (i.length - 1) / 2, o = new Float64Array(e.length), s = new Float64Array(e.length);
+	for (let s = 0; s < t; s += 1) for (let c = 0; c < t; c += 1) {
+		let l = 0;
+		for (let o = -a; o <= a; o += 1) {
+			let u = (c + o + t) % t, d = e[s * t + u];
+			(r ? d < n : d >= n) && (l += i[o + a]);
+		}
+		o[s * t + c] = l;
+	}
+	for (let e = 0; e < t; e += 1) for (let n = 0; n < t; n += 1) {
+		let r = 0;
+		for (let s = -a; s <= a; s += 1) {
+			let c = (e + s + t) % t;
+			r += o[c * t + n] * i[s + a];
+		}
+		s[e * t + n] = r;
+	}
+	return s;
+}
+function z(e, t, n, r) {
+	let i = (r.length - 1) / 2, a = e % n, o = Math.floor(e / n), s = t % n, c = Math.floor(t / n), l = Math.min(Math.abs(a - s), n - Math.abs(a - s)), u = Math.min(Math.abs(o - c), n - Math.abs(o - c));
+	return l > i || u > i ? 0 : r[i + l] * r[i + u];
+}
+function B(e, t, n, r) {
+	let i = t % n, a = Math.floor(t / n);
+	for (let t = -r; t <= r; t += 1) for (let o = -r; o <= r; o += 1) {
+		let r = (i + o + n) % n, s = (a + t + n) % n;
+		e[s * n + r] = 1;
+	}
+}
+function V(e, t, n, r, i) {
+	let a = e.length, o = r / a, s = o <= .5, c = Math.min(o, 1 - o), l = Math.min(2.25, Math.max(.8, .38 / Math.sqrt(c))), u = Math.min(7, Math.floor((t - 1) / 2), Math.ceil(l * 3)), d = L(l, u), f = d[u] * d[u], p = Math.max(1, Math.floor(Math.min(r - n, i - r) / 64));
+	for (let o = 0; o < P; o += 1) {
+		let o = R(e, t, r, s, d), c = [], l = [];
+		for (let t = 0; t < a; t += 1) {
+			let a = e[t];
+			s ? a >= n && a < r ? c.push(t) : a >= r && a < i && l.push(t) : a >= r && a < i ? c.push(t) : a >= n && a < r && l.push(t);
+		}
+		c.sort((e, t) => o[t] - o[e]), l.sort((e, t) => o[e] - o[t]);
+		let m = new Uint8Array(a), h = 0, g = 0, _ = 0;
+		for (; _ < p && h < c.length && g < l.length;) {
+			let n = c[h++];
+			if (m[n]) continue;
+			let r = l[g++];
+			for (; m[r] && g < l.length;) r = l[g++];
+			if (m[r]) break;
+			let i = o[n] - f;
+			if (o[r] - z(n, r, t, d) >= i) break;
+			let a = e[n];
+			e[n] = e[r], e[r] = a, B(m, n, t, u), B(m, r, t, u), _ += 1;
+		}
+		if (_ === 0) break;
+	}
+}
+function H(e, t) {
+	let n = e.length, r = Math.min(F, Math.floor(Math.log2(t)));
+	for (let i = 1; i <= r; i += 1) {
+		let r = 2 ** i;
+		for (let i = 1; i < r; i += 2) V(e, t, Math.floor((i - 1) * n / r), Math.floor(i * n / r), Math.floor((i + 1) * n / r));
+	}
+}
+function U(e, t) {
 	let n = `${e}:${t >>> 0}`, r = N.get(n);
 	if (r) return r;
-	let i = e * e, a = P(i, t), o = new Float64Array(i), s = new Float64Array(i), c = [
+	let i = e * e, a = I(i, t), o = new Float64Array(i), s = new Float64Array(i), c = [
 		.06136,
 		.24477,
 		.38774,
@@ -480,24 +551,24 @@ function F(e, t) {
 	l.sort((e, t) => s[e] - s[t]);
 	let u = new Uint32Array(i);
 	for (let e = 0; e < i; e += 1) u[l[e]] = e;
-	return N.set(n, u), u;
+	return H(u, e), N.set(n, u), u;
 }
 //#endregion
 //#region src/BlueNoiseWave.tsx
-var I = 1e3 / 60, L = [
+var W = 1e3 / 60, G = [
 	0,
 	0,
 	0,
 	1
-], R = [
+], K = [
 	1,
 	1,
 	1,
 	1
-], z, B = /* @__PURE__ */ new WeakMap();
-function V(e, t) {
-	let n = B.get(e);
-	n || (n = /* @__PURE__ */ new Map(), B.set(e, n));
+], q, J = /* @__PURE__ */ new WeakMap();
+function Y(e, t) {
+	let n = J.get(e);
+	n || (n = /* @__PURE__ */ new Map(), J.set(e, n));
 	let r = n.get(t);
 	return r || (r = f(e, "Blue-noise wave WGSL", c).then((n) => e.createRenderPipeline({
 		label: "Blue-noise wave",
@@ -514,26 +585,26 @@ function V(e, t) {
 		primitive: { topology: "triangle-list" }
 	})), n.set(t, r)), r;
 }
-function H(e, t, n, r) {
+function X(e, t, n, r) {
 	return Number.isFinite(e) ? Math.min(n, Math.max(t, e)) : r;
 }
-function U(e, t) {
+function Z(e, t) {
 	return Math.max(1, Math.round(Number.isFinite(e) ? e : t));
 }
-function W(e, t) {
+function ee(e, t) {
 	if (e !== void 0 && t !== void 0) return {
-		width: U(e, 900),
-		height: U(t, 600)
+		width: Z(e, 900),
+		height: Z(t, 600)
 	};
 	if (e !== void 0) {
-		let t = U(e, 900);
+		let t = Z(e, 900);
 		return {
 			width: t,
 			height: Math.max(1, Math.round(t * 2 / 3))
 		};
 	}
 	if (t !== void 0) {
-		let e = U(t, 600);
+		let e = Z(t, 600);
 		return {
 			width: Math.max(1, Math.round(e * 3 / 2)),
 			height: e
@@ -544,18 +615,18 @@ function W(e, t) {
 		height: 600
 	};
 }
-function G(e) {
+function te(e) {
 	let t = e.trim();
-	if (!z) {
+	if (!q) {
 		let e = document.createElement("canvas");
-		e.width = 1, e.height = 1, z = e.getContext("2d", { willReadFrequently: !0 }) ?? void 0;
+		e.width = 1, e.height = 1, q = e.getContext("2d", { willReadFrequently: !0 }) ?? void 0;
 	}
-	if (!z) throw Error("CSS colors could not be resolved because a 2D canvas context is unavailable.");
-	z.fillStyle = "#010203", z.fillStyle = t;
-	let n = z.fillStyle;
-	if (z.fillStyle = "#040506", z.fillStyle = t, !t || z.fillStyle !== n) throw Error(`Invalid CSS color: ${JSON.stringify(e)}.`);
-	z.clearRect(0, 0, 1, 1), z.fillRect(0, 0, 1, 1);
-	let [r, i, a, o] = z.getImageData(0, 0, 1, 1).data;
+	if (!q) throw Error("CSS colors could not be resolved because a 2D canvas context is unavailable.");
+	q.fillStyle = "#010203", q.fillStyle = t;
+	let n = q.fillStyle;
+	if (q.fillStyle = "#040506", q.fillStyle = t, !t || q.fillStyle !== n) throw Error(`Invalid CSS color: ${JSON.stringify(e)}.`);
+	q.clearRect(0, 0, 1, 1), q.fillRect(0, 0, 1, 1);
+	let [r, i, a, o] = q.getImageData(0, 0, 1, 1).data;
 	return [
 		r / 255,
 		i / 255,
@@ -563,28 +634,28 @@ function G(e) {
 		o / 255
 	];
 }
-function K(e) {
-	return typeof e == "string" ? G(e) : [
-		H(e[0], 0, 1, 0),
-		H(e[1], 0, 1, 0),
-		H(e[2], 0, 1, 0),
-		H(e[3] ?? 1, 0, 1, 1)
+function Q(e) {
+	return typeof e == "string" ? te(e) : [
+		X(e[0], 0, 1, 0),
+		X(e[1], 0, 1, 0),
+		X(e[2], 0, 1, 0),
+		X(e[3] ?? 1, 0, 1, 1)
 	];
 }
-function q(e) {
+function $(e) {
 	return typeof e == "string" ? `css:${e}` : `tuple:${e.join(",")}`;
 }
-function J(e) {
+function ne(e) {
 	e?.parameters.destroy(), e?.pattern.destroy();
 }
-function Y(e, t) {
+function re(e, t) {
 	typeof e == "function" ? e(t) : e && (e.current = t);
 }
-var X = e(function({ width: e, height: o, pixelScale: s = 2, patternSize: c = 64, invert: l = !1, seed: u = 1592594996, dark: f = L, light: p = R, powerPreference: m = "high-performance", onReady: h, onError: g, "aria-label": _ = "Blue-noise dithered wave", ...v }, y) {
-	let b = r(null), x = r(h), S = r(g), [C, w] = i(), [T, E] = i("loading"), D = W(e, o), O = q(f), k = q(p);
+var ie = e(function({ width: e, height: o, pixelScale: s = 2, patternSize: c = 64, invert: l = !1, seed: u = 1592594996, dark: f = G, light: p = K, powerPreference: m = "high-performance", onReady: h, onError: g, "aria-label": _ = "Blue-noise dithered wave", ...v }, y) {
+	let b = r(null), x = r(h), S = r(g), [C, w] = i(), [T, E] = i("loading"), D = ee(e, o), O = $(f), k = $(p);
 	x.current = h, S.current = g;
 	let A = t((e) => {
-		b.current = e, Y(y, e);
+		b.current = e, re(y, e);
 	}, [y]);
 	return n(() => {
 		w(void 0);
@@ -618,10 +689,10 @@ var X = e(function({ width: e, height: o, pixelScale: s = 2, patternSize: c = 64
 		let t = !1, n = 0, r;
 		E("loading");
 		let i = (e) => {
-			t || (t = !0, n && cancelAnimationFrame(n), J(r), r = void 0, E("error"), S.current?.(e instanceof Error ? e : Error(String(e))));
+			t || (t = !0, n && cancelAnimationFrame(n), ne(r), r = void 0, E("error"), S.current?.(e instanceof Error ? e : Error(String(e))));
 		};
 		return (async () => {
-			let a = U(s, 1), o = Math.round(H(c, 8, 256, 64)), h = Math.ceil(C.cssWidth / a), g = Math.ceil(C.cssHeight / a), _ = a * C.width / C.cssWidth, v = a * C.height / C.cssHeight, y = F(o, u), b = await d(m);
+			let a = Z(s, 1), o = Math.round(X(c, 8, 128, 64)), h = Math.ceil(C.cssWidth / a), g = Math.ceil(C.cssHeight / a), _ = a * C.width / C.cssWidth, v = a * C.height / C.cssHeight, y = U(o, u), b = await d(m);
 			if (t) return;
 			let S = b.limits.maxTextureDimension2D;
 			if (C.width > S || C.height > S) throw Error(`The output exceeds this device's ${S}px texture limit.`);
@@ -634,7 +705,7 @@ var X = e(function({ width: e, height: o, pixelScale: s = 2, patternSize: c = 64
 				format: T,
 				alphaMode: "premultiplied"
 			});
-			let D = await V(b, T);
+			let D = await Y(b, T);
 			if (t) return;
 			let O = b.createBuffer({
 				label: "Blue-noise wave parameters",
@@ -652,7 +723,7 @@ var X = e(function({ width: e, height: o, pixelScale: s = 2, patternSize: c = 64
 			let A = /* @__PURE__ */ new ArrayBuffer(64), j = new DataView(A);
 			j.setUint32(0, h, !0), j.setUint32(4, g, !0), j.setFloat32(8, _, !0), j.setFloat32(12, v, !0), j.setUint32(16, o, !0), j.setUint32(20, o * o, !0), j.setUint32(24, +!!l, !0);
 			let M = new Float32Array(A, 32, 8);
-			M.set(K(f), 0), M.set(K(p), 4);
+			M.set(Q(f), 0), M.set(Q(p), 4);
 			let N = b.createBindGroup({
 				label: "Blue-noise wave bind group",
 				layout: D.getBindGroupLayout(0),
@@ -663,14 +734,14 @@ var X = e(function({ width: e, height: o, pixelScale: s = 2, patternSize: c = 64
 					binding: 1,
 					resource: { buffer: k }
 				}]
-			}), P = performance.now(), L = P - I, R = !1, z = (r) => {
+			}), P = performance.now(), F = P - W, I = !1, L = (r) => {
 				if (t) return;
-				let a = r - L;
-				if (a < I) {
-					n = requestAnimationFrame(z);
+				let a = r - F;
+				if (a < W) {
+					n = requestAnimationFrame(L);
 					return;
 				}
-				L = r - a % I;
+				F = r - a % W;
 				try {
 					j.setFloat32(28, (r - P) / 1e3, !0), b.queue.writeBuffer(O, 0, A);
 					let a = b.createCommandEncoder({ label: "Blue-noise wave" }), o = a.beginRenderPass({
@@ -687,7 +758,7 @@ var X = e(function({ width: e, height: o, pixelScale: s = 2, patternSize: c = 64
 							storeOp: "store"
 						}]
 					});
-					o.setPipeline(D), o.setBindGroup(0, N), o.draw(3), o.end(), b.queue.submit([a.finish()]), R || (R = !0, b.queue.onSubmittedWorkDone().then(() => {
+					o.setPipeline(D), o.setBindGroup(0, N), o.draw(3), o.end(), b.queue.submit([a.finish()]), I || (I = !0, b.queue.onSubmittedWorkDone().then(() => {
 						if (t) return;
 						E("ready");
 						let n = {
@@ -698,14 +769,14 @@ var X = e(function({ width: e, height: o, pixelScale: s = 2, patternSize: c = 64
 							logicalHeight: g
 						};
 						x.current?.(n);
-					}, i)), n = requestAnimationFrame(z);
+					}, i)), n = requestAnimationFrame(L);
 				} catch (e) {
 					i(e);
 				}
 			};
-			n = requestAnimationFrame(z);
+			n = requestAnimationFrame(L);
 		})().catch(i), () => {
-			t = !0, n && cancelAnimationFrame(n), J(r);
+			t = !0, n && cancelAnimationFrame(n), ne(r);
 		};
 	}, [
 		C,
@@ -726,4 +797,4 @@ var X = e(function({ width: e, height: o, pixelScale: s = 2, patternSize: c = 64
 	});
 });
 //#endregion
-export { X as BlueNoiseWave, M as FloydSteinberg, s as displayShader, o as floydSteinbergShader, v as isWebGpuSupported };
+export { ie as BlueNoiseWave, M as FloydSteinberg, s as displayShader, o as floydSteinbergShader, v as isWebGpuSupported };
