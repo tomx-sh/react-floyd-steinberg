@@ -178,11 +178,12 @@ fn sourceValue(cell: vec2u) -> f32 {
   var point = (vec2f(cell) + vec2f(0.5)) / size - vec2f(0.5);
   point.x *= size.x / size.y;
 
-  let time = parameters.time;
+  let time = parameters.time * 0.5;
   let broadWave = sin(point.x * 5.0 + point.y * 2.2 - time * 0.75);
   let crossWave = sin(point.y * 6.0 - point.x * 2.6 + time * 0.48);
   let driftingGlow = cos(distance(point, vec2f(sin(time * 0.19) * 0.3, cos(time * 0.16) * 0.2)) * 6.0 - time * 0.32);
-  let luminance = clamp(0.5 + broadWave * 0.2 + crossWave * 0.11 + driftingGlow * 0.14, 0.0, 1.0);
+  let rawLuminance = clamp(0.5 + broadWave * 0.2 + crossWave * 0.11 + driftingGlow * 0.14, 0.0, 1.0);
+  let luminance = smoothstep(0.32, 0.68, rawLuminance);
   return select(luminance, 1.0 - luminance, parameters.invert != 0u);
 }
 
