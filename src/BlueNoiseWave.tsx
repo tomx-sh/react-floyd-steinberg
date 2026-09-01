@@ -2,6 +2,7 @@ import {
   forwardRef,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ForwardedRef,
@@ -236,7 +237,7 @@ export const BlueNoiseWave = forwardRef<HTMLCanvasElement, BlueNoiseWaveProps>(f
     };
   }, [intrinsicSize.width, intrinsicSize.height]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !renderSize) return;
     let cancelled = false;
@@ -371,7 +372,7 @@ export const BlueNoiseWave = forwardRef<HTMLCanvasElement, BlueNoiseWaveProps>(f
         }
       };
 
-      animationFrame = requestAnimationFrame(drawFrame);
+      drawFrame(performance.now());
     };
 
     setup().catch(fail);
