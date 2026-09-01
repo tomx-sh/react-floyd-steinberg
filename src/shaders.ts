@@ -150,3 +150,50 @@ fn fragmentMain(@builtin(position) position: vec4f) -> @location(0) vec4f {
   return select(parameters.dark, parameters.light, bit != 0u);
 }
 `;
+
+export const blueNoiseWaveShader = /* wgsl */ `
+struct Parameters {
+  logicalSize: vec2u,
+  cellSize: vec2f,
+  patternSize: u32,
+  patternArea: u32,
+  invert: u32,
+  time: f32,
+  dark: vec4f,
+  light: vec4f,
+}
+
+@group(0) @binding(0) var<uniform> parameters: Parameters;
+@group(0) @binding(1) var<storage, read> noiseRanks: array<u32>;
+
+@vertex
+fn vertexMain(@builtin(vertex_index) index: u32) -> @builtin(position) vec4f {
+  let x = f32((index << 1u) & 2u);
+  let y = f32(index & 2u);
+  return vec4f(x * 2.0 - 1.0, 1.0 - y * 2.0, 0.0, 1.0);
+}
+
+fn sourceValue(cell: vec2u) -> f32 {
+  let size = max(vec2f(parameters.logicalSize), vec2f(1.0));
+  var point = (vec2f(cell) + vec2f(0.5)) / size - vec2f(0.5);
+  point.x *= size.x / size.y;
+
+  let time = parameters.time;
+  let broadWave = sin(point.x * 5.0 + point.y * 2.2 - time * 0.75);
+  let crossWave = sin(point.y * 6.0 - point.x * 2.6 + time * 0.48);
+  let driftingGlow = cos(distance(point, vec2f(sin(time * 0.19) * 0.3, cos(time * 0.16) * 0.2)) * 6.0 - time * 0.32);
+  let luminance = clamp(0.5 + broadWave * 0.2 + crossWave * 0.11 + driftingGlow * 0.14, 0.0, 1.0);
+  return select(luminance, 1.0 - luminance, parameters.invert != 0u);
+}
+
+@fragment
+fn fragmentMain(@builtin(position) position: vec4f) -> @location(0) vec4f {
+  let safeLogicalSize = max(parameters.logicalSize, vec2u(1u));
+  let safeCellSize = max(parameters.cellSize, vec2f(0.0001));
+  let cell = min(vec2u(position.xy / safeCellSize), safeLogicalSize - vec2u(1u));
+  let patternCell = cell % vec2u(parameters.patternSize);
+  let rank = noiseRanks[patternCell.y * parameters.patternSize + patternCell.x];
+  let threshold = (f32(rank) + 0.5) / f32(parameters.patternArea);
+  return select(parameters.dark, parameters.light, sourceValue(cell) >= threshold);
+}
+`;

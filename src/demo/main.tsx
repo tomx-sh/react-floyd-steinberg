@@ -1,6 +1,7 @@
 import { StrictMode, useCallback, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
+  BlueNoiseWave,
   FloydSteinberg,
   isWebGpuSupported,
   type FloydSteinbergFit,
@@ -43,6 +44,9 @@ function App() {
   const [fit, setFit] = useState<FloydSteinbergFit>("contain");
   const [invert, setInvert] = useState(false);
   const [status, setStatus] = useState(isWebGpuSupported() ? "Loading image and GPU…" : "WebGPU is unavailable.");
+  const [waveStatus, setWaveStatus] = useState(
+    isWebGpuSupported() ? "Generating blue-noise pattern…" : "WebGPU is unavailable.",
+  );
 
   const handleReady = useCallback((info: FloydSteinbergRenderInfo) => {
     setStatus(
@@ -138,6 +142,26 @@ function App() {
           onError={handleError}
         />
         <figcaption aria-live="polite">{status}</figcaption>
+      </figure>
+
+      <section className="example-heading">
+        <p className="eyebrow">Stable threshold example</p>
+        <h2>Blue-noise wave</h2>
+        <p className="intro">A fixed tileable blue-noise pattern dithers the moving gradient without changing between frames.</p>
+      </section>
+
+      <figure>
+        <BlueNoiseWave
+          width={900}
+          height={600}
+          pixelScale={1}
+          patternSize={128}
+          dark="oklch(18% 0.03 255)"
+          light="oklch(94% 0.04 90)"
+          onReady={(info) => setWaveStatus(`Animating ${info.logicalWidth} × ${info.logicalHeight} cells.`)}
+          onError={(error) => setWaveStatus(error.message)}
+        />
+        <figcaption aria-live="polite">{waveStatus}</figcaption>
       </figure>
     </main>
   );

@@ -46,6 +46,13 @@ h1 {
   letter-spacing: -0.065em;
 }
 
+h2 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.8rem);
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
 .intro {
   max-width: 630px;
   margin: 20px 0 0;
@@ -117,6 +124,11 @@ figcaption {
   color: light-dark(#625a50, #c3b9aa);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.86rem;
+}
+
+.example-heading {
+  max-width: 760px;
+  margin-top: 72px;
 }
 
 @media (max-width: 600px) {

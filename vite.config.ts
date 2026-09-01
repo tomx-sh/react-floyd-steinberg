@@ -11,7 +11,10 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    plugins: [react(), dts({ include: ["src/index.ts", "src/FloydSteinberg.tsx", "src/shaders.ts"] })],
+    plugins: [
+      react(),
+      dts({ include: ["src/index.ts", "src/FloydSteinberg.tsx", "src/BlueNoiseWave.tsx", "src/shaders.ts"] }),
+    ],
     build: {
       lib: {
         entry: "src/index.ts",

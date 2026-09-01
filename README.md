@@ -97,6 +97,32 @@ Normal canvas attributes such as `className`, `style`, and ARIA attributes are a
 
 The package additionally exports `floydSteinbergShader`, `displayShader`, and `isWebGpuSupported`.
 
+## Blue-noise wave example
+
+`BlueNoiseWave` applies a fixed, tileable blue-noise threshold pattern to an animated procedural gradient. The pattern does not change between frames, so the wave moves without regenerating the dither arrangement. It does not accept arbitrary shaders and does not change the `FloydSteinberg` source API.
+
+```tsx
+import { BlueNoiseWave } from "react-floyd-steinberg";
+
+export function DitheredWave() {
+  return (
+    <BlueNoiseWave
+      width={900}
+      height={600}
+      pixelScale={2}
+      patternSize={64}
+      dark="oklch(18% 0.03 255)"
+      light="oklch(94% 0.04 90)"
+      style={{ width: "100%", height: "auto" }}
+    />
+  );
+}
+```
+
+`patternSize` sets the width and height of the square pattern in dither cells and is clamped to `8…256`. Pattern generation wraps both axes as a torus, then the shader repeats that tile across the canvas. Because `pixelScale` is measured in CSS pixels, both the dots and the complete tile keep a stable CSS size across display densities and responsive resizing. The pattern is deterministic for a given `patternSize` and `seed` and is cached after its first generation.
+
+The component accepts the relevant sizing, color, inversion, seed, canvas, and callback props from `FloydSteinberg`. It omits image and error-diffusion props such as `src`, `fit`, `crossOrigin`, `alphaBackground`, `randomness`, and `threshold`.
+
 ## Local playground
 
 ```sh
