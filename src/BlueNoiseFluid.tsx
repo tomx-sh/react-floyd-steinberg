@@ -253,7 +253,7 @@ export function BlueNoiseFluid(
     patternSize = 64,
     simulationSize = 192,
     interactionRadius = 0.05,
-    quantity = "velocity",
+    quantity = "temperature",
     contrast = 1,
     invert = false,
     seed = 0x5eed1234,
