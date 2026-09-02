@@ -7,18 +7,18 @@ The source can be an image URL, `File`/`Blob`, `ImageBitmap`, image element, or 
 ## Install
 
 ```sh
-npm install github:<github-user>/react-floyd-steinberg#v0.2.1
-pnpm add github:<github-user>/react-floyd-steinberg#v0.2.1
-bun add github:<github-user>/react-floyd-steinberg#v0.2.1
+npm install github:<github-user>/react-floyd-steinberg#v0.3.0
+pnpm add github:<github-user>/react-floyd-steinberg#v0.3.0
+bun add github:<github-user>/react-floyd-steinberg#v0.3.0
 ```
 
 Replace `<github-user>` with the repository owner's GitHub username. The equivalent full Git URL works with all three package managers:
 
 ```sh
-npm install git+https://github.com/<github-user>/react-floyd-steinberg.git#v0.2.1
+npm install git+https://github.com/<github-user>/react-floyd-steinberg.git#v0.3.0
 ```
 
-A tag such as `#v0.2.1` is recommended so application installs remain reproducible. You can instead select:
+A tag such as `#v0.3.0` is recommended so application installs remain reproducible. You can instead select:
 
 - `#main` for the latest commit on the main branch.
 - `#<commit-sha>` for one exact commit.
@@ -29,7 +29,7 @@ The dependency will be stored in the consuming application's `package.json`, for
 ```json
 {
   "dependencies": {
-    "react-floyd-steinberg": "github:<github-user>/react-floyd-steinberg#v0.2.1"
+    "react-floyd-steinberg": "github:<github-user>/react-floyd-steinberg#v0.3.0"
   }
 }
 ```
@@ -122,6 +122,31 @@ export function DitheredWave() {
 `patternSize` sets the width and height of the square pattern in dither cells and is clamped to `8…128`. Pattern generation wraps both axes as a torus, then the shader repeats that tile across the canvas. It starts with an exact rank permutation and refines nested threshold levels through several toroidal Gaussian cluster-to-void swap passes. Because `pixelScale` is measured in CSS pixels, both the dots and the complete tile keep a stable CSS size across display densities and responsive resizing. The pattern is deterministic for a given `patternSize` and `seed` and is cached after its first generation.
 
 The component accepts the relevant sizing, color, inversion, seed, canvas, and callback props from `FloydSteinberg`. It omits image and error-diffusion props such as `src`, `fit`, `crossOrigin`, `alphaBackground`, `randomness`, and `threshold`.
+
+## Interactive fluid example
+
+`BlueNoiseFluid` runs a small projected velocity-and-temperature simulation, then applies the same fixed blue-noise threshold tile. Its perimeter is a hard, zero-velocity wall; the lower edge is hot and the upper edge is cold. Buoyancy and tiny seeded variations in the plate produce convection plumes without changing randomly from frame to frame. Output luminance comes from velocity magnitude, so faster regions appear lighter. Move the pointer over the canvas—or drag on touch devices—to inject velocity and disturb the flow.
+
+```tsx
+import { BlueNoiseFluid } from "react-floyd-steinberg";
+
+export function DitheredFluid() {
+  return (
+    <BlueNoiseFluid
+      width={900}
+      height={600}
+      pixelScale={2}
+      patternSize={64}
+      simulationSize={192}
+      dark="oklch(18% 0.03 255)"
+      light="oklch(94% 0.04 90)"
+      style={{ width: "100%", height: "auto" }}
+    />
+  );
+}
+```
+
+`simulationSize` controls the longest fluid-grid dimension independently from the canvas backing resolution and is clamped to `32…384`. `interactionRadius` controls the pointer influence in normalized canvas units. The defaults favor a subtle, responsive, and inexpensive simulation.
 
 ## Local playground
 

@@ -11,4 +11,8 @@ export {
   BlueNoiseWave,
   type BlueNoiseWaveProps,
 } from "./BlueNoiseWave";
+export {
+  BlueNoiseFluid,
+  type BlueNoiseFluidProps,
+} from "./BlueNoiseFluid";
 export { displayShader, floydSteinbergShader } from "./shaders";

@@ -1,6 +1,7 @@
 import { StrictMode, useCallback, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
+  BlueNoiseFluid,
   BlueNoiseWave,
   FloydSteinberg,
   isWebGpuSupported,
@@ -46,6 +47,9 @@ function App() {
   const [status, setStatus] = useState(isWebGpuSupported() ? "Loading image and GPU…" : "WebGPU is unavailable.");
   const [waveStatus, setWaveStatus] = useState(
     isWebGpuSupported() ? "Generating blue-noise pattern…" : "WebGPU is unavailable.",
+  );
+  const [fluidStatus, setFluidStatus] = useState(
+    isWebGpuSupported() ? "Starting fluid simulation…" : "WebGPU is unavailable.",
   );
 
   const handleReady = useCallback((info: FloydSteinbergRenderInfo) => {
@@ -156,12 +160,33 @@ function App() {
           height={600}
           pixelScale={1}
           patternSize={128}
-          dark="oklch(18% 0.03 255)"
+          //dark="oklch(18% 0.03 255)"
           light="oklch(94% 0.04 90)"
           onReady={(info) => setWaveStatus(`Animating ${info.logicalWidth} × ${info.logicalHeight} cells.`)}
           onError={(error) => setWaveStatus(error.message)}
         />
         <figcaption aria-live="polite">{waveStatus}</figcaption>
+      </figure>
+
+      <section className="example-heading">
+        <p className="eyebrow">Interactive example</p>
+        <h2>Blue-noise fluid</h2>
+        <p className="intro">A hot lower wall and cold upper wall drive convection plumes; brighter regions show faster flow. Move or drag to disturb it.</p>
+      </section>
+
+      <figure>
+        <BlueNoiseFluid
+          width={900}
+          height={600}
+          pixelScale={1}
+          patternSize={64}
+          simulationSize={192}
+          dark="rgb(255, 255, 255)" // White
+          light="rgb(200, 200, 200)" // Gray
+          onReady={(info) => setFluidStatus(`Simulating and dithering ${info.logicalWidth} × ${info.logicalHeight} cells.`)}
+          onError={(error) => setFluidStatus(error.message)}
+        />
+        <figcaption aria-live="polite">{fluidStatus}</figcaption>
       </figure>
     </main>
   );
