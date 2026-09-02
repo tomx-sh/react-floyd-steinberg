@@ -196,8 +196,8 @@ function App() {
           patternSize={64}
           simulationSize={192}
           contrast={fluidContrast}
-          dark="rgb(255, 255, 255)" // White
-          light="rgb(0, 0, 0)"
+          dark="rgb(0,0,0)"
+          light="rgb(255,255,255)"
           onReady={(info) => setFluidStatus(`Simulating and dithering ${info.logicalWidth} × ${info.logicalHeight} cells.`)}
           onError={(error) => setFluidStatus(error.message)}
         />
