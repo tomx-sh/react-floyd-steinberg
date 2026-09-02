@@ -7,18 +7,18 @@ The source can be an image URL, `File`/`Blob`, `ImageBitmap`, image element, or 
 ## Install
 
 ```sh
-npm install github:<github-user>/react-floyd-steinberg#v0.3.0
-pnpm add github:<github-user>/react-floyd-steinberg#v0.3.0
-bun add github:<github-user>/react-floyd-steinberg#v0.3.0
+npm install github:<github-user>/react-floyd-steinberg#v0.4.1
+pnpm add github:<github-user>/react-floyd-steinberg#v0.4.1
+bun add github:<github-user>/react-floyd-steinberg#v0.4.1
 ```
 
 Replace `<github-user>` with the repository owner's GitHub username. The equivalent full Git URL works with all three package managers:
 
 ```sh
-npm install git+https://github.com/<github-user>/react-floyd-steinberg.git#v0.3.0
+npm install git+https://github.com/<github-user>/react-floyd-steinberg.git#v0.4.1
 ```
 
-A tag such as `#v0.3.0` is recommended so application installs remain reproducible. You can instead select:
+A tag such as `#v0.4.1` is recommended so application installs remain reproducible. You can instead select:
 
 - `#main` for the latest commit on the main branch.
 - `#<commit-sha>` for one exact commit.
@@ -29,7 +29,7 @@ The dependency will be stored in the consuming application's `package.json`, for
 ```json
 {
   "dependencies": {
-    "react-floyd-steinberg": "github:<github-user>/react-floyd-steinberg#v0.3.0"
+    "react-floyd-steinberg": "github:<github-user>/react-floyd-steinberg#v0.4.1"
   }
 }
 ```
@@ -125,9 +125,11 @@ The component accepts the relevant sizing, color, inversion, seed, canvas, and c
 
 ## Interactive fluid example
 
-`BlueNoiseFluid` runs a small projected velocity-and-temperature simulation, then applies the same fixed blue-noise threshold tile. Its perimeter is a hard, zero-velocity wall; the lower edge is hot and the upper edge is cold. Buoyancy and tiny seeded variations in the plate produce convection plumes without changing randomly from frame to frame. Output luminance comes from velocity magnitude, so faster regions appear lighter. Move the pointer over the canvas—or drag on touch devices—to inject velocity and disturb the flow.
+`BlueNoiseFluid` runs a small projected velocity-and-temperature simulation, then applies the same fixed blue-noise threshold tile. Its perimeter is a hard, zero-velocity wall; the lower edge is hot, the upper edge is cold, and the left and right edges transition linearly between those temperatures. Buoyancy and tiny seeded variations in the plate produce convection plumes without changing randomly from frame to frame.
 
-The `contrast` prop (default `1`, clamped to `0.25…8`) applies a contrast post process to the velocity field before dithering: values above `1` push luminance away from its midpoint and grow the colored areas, while values below `1` shrink them.
+The `quantity` prop chooses the field used for output luminance and pointer interaction. Its default, `"velocity"`, makes faster regions lighter and lets the pointer stir the flow. Set it to `"temperature"` to make hotter regions lighter and paint heat into the fluid with the pointer.
+
+The `contrast` prop (default `1`, clamped to `0.25…8`) applies a contrast post process to the selected field before dithering: values above `1` push luminance away from its midpoint and grow the colored areas, while values below `1` shrink them.
 
 ```tsx
 import { BlueNoiseFluid } from "react-floyd-steinberg";
@@ -140,6 +142,7 @@ export function DitheredFluid() {
       pixelScale={2}
       patternSize={64}
       simulationSize={192}
+      quantity="temperature"
       dark="oklch(18% 0.03 255)"
       light="oklch(94% 0.04 90)"
       style={{ width: "100%", height: "auto" }}

@@ -209,7 +209,7 @@ struct Parameters {
   pointerActive: f32,
   interactionRadius: f32,
   time: f32,
-  padding: f32,
+  quantity: u32,
 }
 
 @group(0) @binding(0) var<uniform> parameters: Parameters;
@@ -242,6 +242,11 @@ fn plateTemperature(cell: vec2u) -> f32 {
   return clamp(0.91 + irregularity * 0.055 + broadVariation * 0.035, 0.78, 1.0);
 }
 
+fn wallTemperature(cell: vec2u) -> f32 {
+  let verticalPosition = f32(cell.y) / f32(max(parameters.size.y - 1u, 1u));
+  return verticalPosition * plateTemperature(cell);
+}
+
 @compute @workgroup_size(8, 8)
 fn initialize(@builtin(global_invocation_id) id: vec3u) {
   if (any(id.xy >= parameters.size)) {
@@ -250,11 +255,8 @@ fn initialize(@builtin(global_invocation_id) id: vec3u) {
 
   let uv = simulationUv(id.xy);
   var temperature = exp(-(1.0 - uv.y) * 42.0) * plateTemperature(id.xy);
-  if (id.y == 0u) {
-    temperature = 0.0;
-  }
-  if (id.y + 1u == parameters.size.y) {
-    temperature = plateTemperature(id.xy);
+  if (isBoundary(id.xy)) {
+    temperature = wallTemperature(id.xy);
   }
   textureStore(nextState, vec2i(id.xy), vec4f(0.0, 0.0, 0.0, temperature));
 }
@@ -289,14 +291,7 @@ fn advect(@builtin(global_invocation_id) id: vec3u) {
   let current = textureLoad(previousState, vec2i(cell), 0);
 
   if (isBoundary(cell)) {
-    var boundaryTemperature = current.w * exp(-parameters.deltaTime * 0.035);
-    if (cell.y == 0u) {
-      boundaryTemperature = 0.0;
-    }
-    if (cell.y + 1u == parameters.size.y) {
-      boundaryTemperature = plateTemperature(cell);
-    }
-    textureStore(nextState, vec2i(cell), vec4f(0.0, 0.0, 0.0, boundaryTemperature));
+    textureStore(nextState, vec2i(cell), vec4f(0.0, 0.0, 0.0, wallTemperature(cell)));
     return;
   }
 
@@ -325,8 +320,12 @@ fn advect(@builtin(global_invocation_id) id: vec3u) {
   if (parameters.pointerActive > 0.5) {
     let offset = uv - parameters.pointer;
     let falloff = exp(-dot(offset, offset) / max(0.0001, parameters.interactionRadius * parameters.interactionRadius));
-    let tangent = vec2f(-offset.y, offset.x);
-    velocity += (parameters.pointerVelocity * 1.4 + tangent * 0.4) * falloff * parameters.deltaTime;
+    if (parameters.quantity == 0u) {
+      let tangent = vec2f(-offset.y, offset.x);
+      velocity += (parameters.pointerVelocity * 1.4 + tangent * 0.4) * falloff * parameters.deltaTime;
+    } else {
+      temperature += falloff * parameters.deltaTime * 2.5;
+    }
   }
 
   velocity *= exp(-parameters.deltaTime * 0.12);
@@ -392,13 +391,7 @@ fn project(@builtin(global_invocation_id) id: vec3u) {
   var temperature = advected.w;
 
   if (isBoundary(cell)) {
-    if (cell.y == 0u) {
-      temperature = 0.0;
-    }
-    if (cell.y + 1u == parameters.size.y) {
-      temperature = plateTemperature(cell);
-    }
-    textureStore(nextState, vec2i(cell), vec4f(0.0, 0.0, 0.0, temperature));
+    textureStore(nextState, vec2i(cell), vec4f(0.0, 0.0, 0.0, wallTemperature(cell)));
     return;
   }
 
@@ -424,7 +417,7 @@ struct Parameters {
   logicalSize: vec2u,
   cellSize: vec2f,
   patternSize: u32,
-  patternArea: u32,
+  quantity: u32,
   invert: u32,
   contrast: f32,
   dark: vec4f,
@@ -449,15 +442,17 @@ fn fragmentMain(@builtin(position) position: vec4f) -> @location(0) vec4f {
   let safeCellSize = max(parameters.cellSize, vec2f(0.0001));
   let cell = min(vec2u(position.xy / safeCellSize), safeLogicalSize - vec2u(1u));
   let uv = (vec2f(cell) + vec2f(0.5)) / vec2f(safeLogicalSize);
-  let velocity = textureSampleLevel(fluidState, linearSampler, uv, 0.0).xy;
-  var luminance = smoothstep(0.015, 0.16, length(velocity));
+  let fluid = textureSampleLevel(fluidState, linearSampler, uv, 0.0);
+  let velocityLuminance = smoothstep(0.015, 0.16, length(fluid.xy));
+  let temperatureLuminance = smoothstep(0.0, 0.85, fluid.w);
+  var luminance = select(velocityLuminance, temperatureLuminance, parameters.quantity != 0u);
   // Expand or collapse the colored areas by pushing luminance away from or
   // toward its midpoint before the blue-noise threshold comparison.
   luminance = clamp((luminance - 0.5) * parameters.contrast + 0.5, 0.0, 1.0);
   let source = select(luminance, 1.0 - luminance, parameters.invert != 0u);
   let patternCell = cell % vec2u(parameters.patternSize);
   let rank = noiseRanks[patternCell.y * parameters.patternSize + patternCell.x];
-  let threshold = (f32(rank) + 0.5) / f32(parameters.patternArea);
+  let threshold = (f32(rank) + 0.5) / f32(parameters.patternSize * parameters.patternSize);
   return select(parameters.dark, parameters.light, source >= threshold);
 }
 `;

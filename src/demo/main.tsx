@@ -5,6 +5,7 @@ import {
   BlueNoiseWave,
   FloydSteinberg,
   isWebGpuSupported,
+  type BlueNoiseFluidQuantity,
   type FloydSteinbergFit,
   type FloydSteinbergRenderInfo,
   type FloydSteinbergSource,
@@ -52,6 +53,7 @@ function App() {
     isWebGpuSupported() ? "Starting fluid simulation…" : "WebGPU is unavailable.",
   );
   const [fluidContrast, setFluidContrast] = useState(1);
+  const [fluidQuantity, setFluidQuantity] = useState<BlueNoiseFluidQuantity>("velocity");
 
   const handleReady = useCallback((info: FloydSteinbergRenderInfo) => {
     setStatus(
@@ -172,7 +174,21 @@ function App() {
       <section className="example-heading">
         <p className="eyebrow">Interactive example</p>
         <h2>Blue-noise fluid</h2>
-        <p className="intro">A hot lower wall and cold upper wall drive convection plumes; brighter regions show faster flow. Move or drag to disturb it.</p>
+        <p className="intro">
+          A hot lower wall and cold upper wall drive convection plumes, with a gradual temperature along the
+          side walls. Choose velocity to stir the flow, or temperature to reveal the thermal field and paint heat
+          with the pointer.
+        </p>
+        <label>
+          <span>Quantity</span>
+          <select
+            value={fluidQuantity}
+            onChange={(event) => setFluidQuantity(event.currentTarget.value as BlueNoiseFluidQuantity)}
+          >
+            <option value="velocity">Velocity</option>
+            <option value="temperature">Temperature</option>
+          </select>
+        </label>
         <label>
           <span>
             Contrast <output>{fluidContrast.toFixed(2)}</output>
@@ -195,6 +211,7 @@ function App() {
           pixelScale={1}
           patternSize={64}
           simulationSize={192}
+          quantity={fluidQuantity}
           contrast={fluidContrast}
           dark="rgb(0,0,0)"
           light="rgb(255,255,255)"

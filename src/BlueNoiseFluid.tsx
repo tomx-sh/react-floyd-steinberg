@@ -21,6 +21,8 @@ const DEFAULT_DARK: FloydSteinbergColor = [0, 0, 0, 1];
 const DEFAULT_LIGHT: FloydSteinbergColor = [1, 1, 1, 1];
 let cssColorContext: CanvasRenderingContext2D | undefined;
 
+export type BlueNoiseFluidQuantity = "velocity" | "temperature";
+
 export interface BlueNoiseFluidProps
   extends Omit<
     FloydSteinbergProps,
@@ -33,7 +35,12 @@ export interface BlueNoiseFluidProps
   /** Pointer injection radius in normalized canvas units. Defaults to 0.05. */
   interactionRadius?: number;
   /**
-   * Contrast applied to the velocity-derived luminance before dithering.
+   * Fluid quantity used for brightness and pointer interaction. Velocity mode
+   * stirs the flow; temperature mode injects heat. Defaults to "velocity".
+   */
+  quantity?: BlueNoiseFluidQuantity;
+  /**
+   * Contrast applied to the selected quantity's luminance before dithering.
    * Values above 1 grow the colored (light) areas; values below 1 shrink
    * them toward noise. Defaults to 1; clamped to 0.25–8.
    */
@@ -246,6 +253,7 @@ export function BlueNoiseFluid(
     patternSize = 64,
     simulationSize = 192,
     interactionRadius = 0.05,
+    quantity = "velocity",
     contrast = 1,
     invert = false,
     seed = 0x5eed1234,
@@ -278,7 +286,7 @@ export function BlueNoiseFluid(
   onReadyRef.current = onReady;
   onErrorRef.current = onError;
   const sizeRef = useRef<RenderSize | undefined>(undefined);
-  const propsRef = useRef<Required<Pick<BlueNoiseFluidProps, "pixelScale" | "patternSize" | "simulationSize" | "interactionRadius" | "contrast" | "invert" | "seed" | "powerPreference">> & {
+  const propsRef = useRef<Required<Pick<BlueNoiseFluidProps, "pixelScale" | "patternSize" | "simulationSize" | "interactionRadius" | "quantity" | "contrast" | "invert" | "seed" | "powerPreference">> & {
     darkDependency: string;
     lightDependency: string;
     dark: FloydSteinbergColor;
@@ -288,6 +296,7 @@ export function BlueNoiseFluid(
     patternSize,
     simulationSize,
     interactionRadius,
+    quantity,
     contrast,
     invert,
     darkDependency,
@@ -302,6 +311,7 @@ export function BlueNoiseFluid(
     patternSize,
     simulationSize,
     interactionRadius,
+    quantity,
     contrast,
     invert,
     darkDependency,
@@ -539,6 +549,7 @@ export function BlueNoiseFluid(
       simulationView.setUint32(4, simulationHeight, true);
       simulationView.setUint32(12, props.seed >>> 0, true);
       simulationView.setFloat32(36, clamp(props.interactionRadius, 0.01, 0.3, 0.05), true);
+      simulationView.setUint32(44, props.quantity === "temperature" ? 1 : 0, true);
       device.queue.writeBuffer(simulationParameters, 0, simulationData);
 
       const displayData = new ArrayBuffer(64);
@@ -549,7 +560,7 @@ export function BlueNoiseFluid(
       displayView.setFloat32(8, (initialScale * initialSize.width) / initialSize.cssWidth, true);
       displayView.setFloat32(12, (initialScale * initialSize.height) / initialSize.cssHeight, true);
       displayView.setUint32(16, resolvedPatternSize, true);
-      displayView.setUint32(20, resolvedPatternSize * resolvedPatternSize, true);
+      displayView.setUint32(20, props.quantity === "temperature" ? 1 : 0, true);
       displayView.setUint32(24, props.invert ? 1 : 0, true);
       displayView.setFloat32(28, clamp(props.contrast, 0.25, 8, 1), true);
       let colorCache = { key: `${props.darkDependency}|${props.lightDependency}`, dark: normalizedColor(props.dark), light: normalizedColor(props.light) };
@@ -775,6 +786,7 @@ export function BlueNoiseFluid(
           simulationView.setFloat32(32, pointerActive ? 1 : 0, true);
           simulationView.setFloat32(36, clamp(props.interactionRadius, 0.01, 0.3, 0.05), true);
           simulationView.setFloat32(40, (timestamp - startTime) / 1000, true);
+          simulationView.setUint32(44, props.quantity === "temperature" ? 1 : 0, true);
           device.queue.writeBuffer(simulationParameters, 0, simulationData);
           pointer.velocityX *= 0.72;
           pointer.velocityY *= 0.72;
@@ -789,7 +801,7 @@ export function BlueNoiseFluid(
           displayView.setUint32(0, logicalWidth, true);
           displayView.setUint32(4, logicalHeight, true);
           displayView.setUint32(16, resolvedPatternSize, true);
-          displayView.setUint32(20, resolvedPatternSize * resolvedPatternSize, true);
+          displayView.setUint32(20, props.quantity === "temperature" ? 1 : 0, true);
           displayView.setUint32(24, props.invert ? 1 : 0, true);
           displayView.setFloat32(28, clamp(props.contrast, 0.25, 8, 1), true);
           const colorKey = `${props.darkDependency}|${props.lightDependency}`;
