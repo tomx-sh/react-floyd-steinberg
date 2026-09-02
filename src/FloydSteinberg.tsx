@@ -1,11 +1,10 @@
 import {
-  forwardRef,
   useCallback,
   useEffect,
   useRef,
   useState,
   type CanvasHTMLAttributes,
-  type ForwardedRef,
+  type Ref,
 } from "react";
 import { displayShader, floydSteinbergShader } from "./shaders";
 import { createCheckedModule, getSharedDevice, isWebGpuSupported as webGpuIsSupported } from "./webgpu";
@@ -73,6 +72,8 @@ export interface FloydSteinbergProps
   onReady?: (info: FloydSteinbergRenderInfo) => void;
   /** Called when image loading, WebGPU setup, shader compilation, or rendering fails. */
   onError?: (error: Error) => void;
+  /** Receives the rendered canvas element. */
+  ref?: Ref<HTMLCanvasElement>;
 }
 
 interface LoadedSource {
@@ -319,12 +320,7 @@ function writeDisplayParameters(
   device.queue.writeBuffer(buffer, 0, data);
 }
 
-function setForwardedRef(ref: ForwardedRef<HTMLCanvasElement>, node: HTMLCanvasElement | null) {
-  if (typeof ref === "function") ref(node);
-  else if (ref) ref.current = node;
-}
-
-export const FloydSteinberg = forwardRef<HTMLCanvasElement, FloydSteinbergProps>(function FloydSteinberg(
+export function FloydSteinberg(
   {
     src,
     width,
@@ -342,11 +338,10 @@ export const FloydSteinberg = forwardRef<HTMLCanvasElement, FloydSteinbergProps>
     powerPreference = "high-performance",
     onReady,
     onError,
+    ref,
     "aria-label": ariaLabel = "Floyd–Steinberg dithered image",
     ...canvasProps
-  },
-  forwardedRef,
-) {
+  }: FloydSteinbergProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const onReadyRef = useRef(onReady);
   const onErrorRef = useRef(onError);
@@ -360,9 +355,10 @@ export const FloydSteinberg = forwardRef<HTMLCanvasElement, FloydSteinbergProps>
   const assignRef = useCallback(
     (node: HTMLCanvasElement | null) => {
       canvasRef.current = node;
-      setForwardedRef(forwardedRef, node);
+      if (typeof ref === "function") ref(node);
+      else if (ref) ref.current = node;
     },
-    [forwardedRef],
+    [ref],
   );
 
   useEffect(() => {
@@ -658,4 +654,4 @@ export const FloydSteinberg = forwardRef<HTMLCanvasElement, FloydSteinbergProps>
       data-webgpu-status={status}
     />
   );
-});
+}

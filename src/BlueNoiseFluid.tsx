@@ -1,11 +1,9 @@
 import {
-  forwardRef,
   useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
-  type ForwardedRef,
 } from "react";
 import { generateBlueNoisePattern } from "./blueNoise";
 import type {
@@ -228,12 +226,7 @@ function destroyResources(resources: RenderResources | undefined) {
   resources?.pressureB.destroy();
 }
 
-function setForwardedRef(ref: ForwardedRef<HTMLCanvasElement>, node: HTMLCanvasElement | null) {
-  if (typeof ref === "function") ref(node);
-  else if (ref) ref.current = node;
-}
-
-export const BlueNoiseFluid = forwardRef<HTMLCanvasElement, BlueNoiseFluidProps>(function BlueNoiseFluid(
+export function BlueNoiseFluid(
   {
     width,
     height,
@@ -248,12 +241,11 @@ export const BlueNoiseFluid = forwardRef<HTMLCanvasElement, BlueNoiseFluidProps>
     powerPreference = "high-performance",
     onReady,
     onError,
+    ref,
     style,
     "aria-label": ariaLabel = "Interactive blue-noise fluid simulation",
     ...canvasProps
-  },
-  forwardedRef,
-) {
+  }: BlueNoiseFluidProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pointerRef = useRef<PointerState>({
     x: 0.5,
@@ -276,9 +268,10 @@ export const BlueNoiseFluid = forwardRef<HTMLCanvasElement, BlueNoiseFluidProps>
   const assignRef = useCallback(
     (node: HTMLCanvasElement | null) => {
       canvasRef.current = node;
-      setForwardedRef(forwardedRef, node);
+      if (typeof ref === "function") ref(node);
+      else if (ref) ref.current = node;
     },
-    [forwardedRef],
+    [ref],
   );
 
   useEffect(() => {
@@ -717,4 +710,4 @@ export const BlueNoiseFluid = forwardRef<HTMLCanvasElement, BlueNoiseFluidProps>
       data-webgpu-status={status}
     />
   );
-});
+}

@@ -1,11 +1,9 @@
 import {
-  forwardRef,
   useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
-  type ForwardedRef,
 } from "react";
 import { generateBlueNoisePattern } from "./blueNoise";
 import type {
@@ -137,12 +135,7 @@ function destroyResources(resources: RenderResources | undefined) {
   resources?.pattern.destroy();
 }
 
-function setForwardedRef(ref: ForwardedRef<HTMLCanvasElement>, node: HTMLCanvasElement | null) {
-  if (typeof ref === "function") ref(node);
-  else if (ref) ref.current = node;
-}
-
-export const BlueNoiseWave = forwardRef<HTMLCanvasElement, BlueNoiseWaveProps>(function BlueNoiseWave(
+export function BlueNoiseWave(
   {
     width,
     height,
@@ -155,11 +148,10 @@ export const BlueNoiseWave = forwardRef<HTMLCanvasElement, BlueNoiseWaveProps>(f
     powerPreference = "high-performance",
     onReady,
     onError,
+    ref,
     "aria-label": ariaLabel = "Blue-noise dithered wave",
     ...canvasProps
-  },
-  forwardedRef,
-) {
+  }: BlueNoiseWaveProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const onReadyRef = useRef(onReady);
   const onErrorRef = useRef(onError);
@@ -174,9 +166,10 @@ export const BlueNoiseWave = forwardRef<HTMLCanvasElement, BlueNoiseWaveProps>(f
   const assignRef = useCallback(
     (node: HTMLCanvasElement | null) => {
       canvasRef.current = node;
-      setForwardedRef(forwardedRef, node);
+      if (typeof ref === "function") ref(node);
+      else if (ref) ref.current = node;
     },
-    [forwardedRef],
+    [ref],
   );
 
   useEffect(() => {
@@ -403,4 +396,4 @@ export const BlueNoiseWave = forwardRef<HTMLCanvasElement, BlueNoiseWaveProps>(f
       data-webgpu-status={status}
     />
   );
-});
+}

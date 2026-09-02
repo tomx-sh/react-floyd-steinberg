@@ -1,4 +1,4 @@
-import { CanvasHTMLAttributes } from 'react';
+import { CanvasHTMLAttributes, Ref } from 'react';
 export type FloydSteinbergColor = string | readonly [number, number, number] | readonly [number, number, number, number];
 export type FloydSteinbergFit = "stretch" | "cover" | "contain";
 export type FloydSteinbergSource = string | Blob | ImageBitmap | HTMLImageElement | HTMLCanvasElement | OffscreenCanvas;
@@ -51,6 +51,8 @@ export interface FloydSteinbergProps extends Omit<CanvasHTMLAttributes<HTMLCanva
     onReady?: (info: FloydSteinbergRenderInfo) => void;
     /** Called when image loading, WebGPU setup, shader compilation, or rendering fails. */
     onError?: (error: Error) => void;
+    /** Receives the rendered canvas element. */
+    ref?: Ref<HTMLCanvasElement>;
 }
 export declare function isWebGpuSupported(): boolean;
-export declare const FloydSteinberg: import('react').ForwardRefExoticComponent<FloydSteinbergProps & import('react').RefAttributes<HTMLCanvasElement>>;
+export declare function FloydSteinberg({ src, width, height, pixelScale, randomness, threshold, fit, invert, seed, alphaBackground, dark, light, crossOrigin, powerPreference, onReady, onError, ref, "aria-label": ariaLabel, ...canvasProps }: FloydSteinbergProps): import("react").JSX.Element;

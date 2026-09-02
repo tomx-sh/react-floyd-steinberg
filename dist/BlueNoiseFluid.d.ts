@@ -7,4 +7,4 @@ export interface BlueNoiseFluidProps extends Omit<FloydSteinbergProps, "alphaBac
     /** Pointer injection radius in normalized canvas units. Defaults to 0.05. */
     interactionRadius?: number;
 }
-export declare const BlueNoiseFluid: import('react').ForwardRefExoticComponent<BlueNoiseFluidProps & import('react').RefAttributes<HTMLCanvasElement>>;
+export declare function BlueNoiseFluid({ width, height, pixelScale, patternSize, simulationSize, interactionRadius, invert, seed, dark, light, powerPreference, onReady, onError, ref, style, "aria-label": ariaLabel, ...canvasProps }: BlueNoiseFluidProps): import("react").JSX.Element;
