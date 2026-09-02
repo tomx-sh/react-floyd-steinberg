@@ -43,6 +43,7 @@ export interface BlueNoiseFluidProps
 interface Pipelines {
   initialize: GPUComputePipeline;
   clearScalar: GPUComputePipeline;
+  resample: GPUComputePipeline;
   advect: GPUComputePipeline;
   divergence: GPUComputePipeline;
   solvePressure: GPUComputePipeline;
@@ -121,6 +122,11 @@ function getPipelines(device: GPUDevice, format: GPUTextureFormat): Promise<Pipe
           label: "Clear fluid scalar field",
           layout: computePipelineLayout,
           compute: { module: simulationModule, entryPoint: "clearScalar" },
+        }),
+        resample: device.createComputePipeline({
+          label: "Resample fluid state",
+          layout: computePipelineLayout,
+          compute: { module: simulationModule, entryPoint: "resample" },
         }),
         advect: device.createComputePipeline({
           label: "Advect fluid",
@@ -271,6 +277,47 @@ export function BlueNoiseFluid(
   const lightDependency = colorDependency(light);
   onReadyRef.current = onReady;
   onErrorRef.current = onError;
+  const sizeRef = useRef<RenderSize | undefined>(undefined);
+  const propsRef = useRef<Required<Pick<BlueNoiseFluidProps, "pixelScale" | "patternSize" | "simulationSize" | "interactionRadius" | "contrast" | "invert" | "seed" | "powerPreference">> & {
+    darkDependency: string;
+    lightDependency: string;
+    dark: FloydSteinbergColor;
+    light: FloydSteinbergColor;
+  }>({
+    pixelScale,
+    patternSize,
+    simulationSize,
+    interactionRadius,
+    contrast,
+    invert,
+    darkDependency,
+    lightDependency,
+    seed,
+    powerPreference,
+    dark,
+    light,
+  });
+  propsRef.current = {
+    pixelScale,
+    patternSize,
+    simulationSize,
+    interactionRadius,
+    contrast,
+    invert,
+    darkDependency,
+    lightDependency,
+    seed,
+    powerPreference,
+    dark,
+    light,
+  };
+  const colorCacheRef = useRef<{
+    key: string;
+    dark: readonly [number, number, number, number];
+    light: readonly [number, number, number, number];
+  } | undefined>(undefined);
+  const intrinsicRef = useRef(intrinsicSize);
+  intrinsicRef.current = intrinsicSize;
 
   const assignRef = useCallback(
     (node: HTMLCanvasElement | null) => {
@@ -306,6 +353,7 @@ export function BlueNoiseFluid(
         cssHeight,
         devicePixelRatio,
       };
+      sizeRef.current = nextSize;
       setRenderSize((current) =>
         current &&
         current.width === nextSize.width &&
@@ -387,7 +435,7 @@ export function BlueNoiseFluid(
 
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !renderSize) return;
+    if (!canvas) return;
     let cancelled = false;
     let animationFrame = 0;
     let resources: RenderResources | undefined;
@@ -404,24 +452,29 @@ export function BlueNoiseFluid(
     };
 
     const setup = async () => {
-      const resolvedScale = positiveInteger(pixelScale, 1);
-      const resolvedPatternSize = Math.round(clamp(patternSize, 8, 128, 64));
-      const resolvedSimulationSize = Math.round(clamp(simulationSize, 32, 384, 192));
-      const logicalWidth = Math.ceil(renderSize.cssWidth / resolvedScale);
-      const logicalHeight = Math.ceil(renderSize.cssHeight / resolvedScale);
-      const cellWidth = (resolvedScale * renderSize.width) / renderSize.cssWidth;
-      const cellHeight = (resolvedScale * renderSize.height) / renderSize.cssHeight;
-      const aspect = renderSize.cssWidth / renderSize.cssHeight;
-      const simulationWidth = aspect >= 1 ? resolvedSimulationSize : Math.max(16, Math.round(resolvedSimulationSize * aspect));
-      const simulationHeight = aspect >= 1 ? Math.max(16, Math.round(resolvedSimulationSize / aspect)) : resolvedSimulationSize;
-      const pattern = generateBlueNoisePattern(resolvedPatternSize, seed);
-      const device = await getSharedDevice(powerPreference);
+      const props = propsRef.current;
+      const resolvedSimulationSize = Math.round(clamp(props.simulationSize, 32, 384, 192));
+      let resolvedPatternSize = Math.round(clamp(props.patternSize, 8, 128, 64));
+      const initialSize = sizeRef.current ?? {
+        width: canvas.width,
+        height: canvas.height,
+        cssWidth: canvas.clientWidth || intrinsicRef.current.width,
+        cssHeight: canvas.clientHeight || intrinsicRef.current.height,
+        devicePixelRatio: window.devicePixelRatio || 1,
+      };
+      const aspect = initialSize.cssWidth / initialSize.cssHeight;
+      let simulationWidth = aspect >= 1 ? resolvedSimulationSize : Math.max(16, Math.round(resolvedSimulationSize * aspect));
+      let simulationHeight = aspect >= 1 ? Math.max(16, Math.round(resolvedSimulationSize / aspect)) : resolvedSimulationSize;
+      let logicalWidth = Math.ceil(initialSize.cssWidth / Math.max(1, Math.round(props.pixelScale)));
+      let logicalHeight = Math.ceil(initialSize.cssHeight / Math.max(1, Math.round(props.pixelScale)));
+      const pattern = generateBlueNoisePattern(resolvedPatternSize, props.seed);
+      const device = await getSharedDevice(props.powerPreference);
       if (cancelled) return;
 
       const maxDimension = device.limits.maxTextureDimension2D;
       if (
-        renderSize.width > maxDimension ||
-        renderSize.height > maxDimension ||
+        initialSize.width > maxDimension ||
+        initialSize.height > maxDimension ||
         simulationWidth > maxDimension ||
         simulationHeight > maxDimension
       ) {
@@ -447,7 +500,7 @@ export function BlueNoiseFluid(
       });
       const patternBuffer = device.createBuffer({
         label: "Tileable blue-noise ranks",
-        size: pattern.byteLength,
+        size: 128 * 128 * 4,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
       });
       const textureDescriptor: GPUTextureDescriptor = {
@@ -455,11 +508,11 @@ export function BlueNoiseFluid(
         format: "rgba16float",
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING,
       };
-      const state = device.createTexture({ ...textureDescriptor, label: "Fluid state" });
-      const advectedState = device.createTexture({ ...textureDescriptor, label: "Advected fluid state" });
-      const divergence = device.createTexture({ ...textureDescriptor, label: "Fluid divergence" });
-      const pressureA = device.createTexture({ ...textureDescriptor, label: "Fluid pressure A" });
-      const pressureB = device.createTexture({ ...textureDescriptor, label: "Fluid pressure B" });
+      let state = device.createTexture({ ...textureDescriptor, label: "Fluid state" });
+      let advectedState = device.createTexture({ ...textureDescriptor, label: "Advected fluid state" });
+      let divergence = device.createTexture({ ...textureDescriptor, label: "Fluid divergence" });
+      let pressureA = device.createTexture({ ...textureDescriptor, label: "Fluid pressure A" });
+      let pressureB = device.createTexture({ ...textureDescriptor, label: "Fluid pressure B" });
       const sampler = device.createSampler({
         label: "Fluid linear sampler",
         magFilter: "linear",
@@ -484,30 +537,32 @@ export function BlueNoiseFluid(
       const simulationView = new DataView(simulationData);
       simulationView.setUint32(0, simulationWidth, true);
       simulationView.setUint32(4, simulationHeight, true);
-      simulationView.setUint32(12, seed >>> 0, true);
-      simulationView.setFloat32(36, clamp(interactionRadius, 0.01, 0.3, 0.05), true);
+      simulationView.setUint32(12, props.seed >>> 0, true);
+      simulationView.setFloat32(36, clamp(props.interactionRadius, 0.01, 0.3, 0.05), true);
       device.queue.writeBuffer(simulationParameters, 0, simulationData);
 
       const displayData = new ArrayBuffer(64);
       const displayView = new DataView(displayData);
+      const initialScale = Math.max(1, Math.round(props.pixelScale));
       displayView.setUint32(0, logicalWidth, true);
       displayView.setUint32(4, logicalHeight, true);
-      displayView.setFloat32(8, cellWidth, true);
-      displayView.setFloat32(12, cellHeight, true);
+      displayView.setFloat32(8, (initialScale * initialSize.width) / initialSize.cssWidth, true);
+      displayView.setFloat32(12, (initialScale * initialSize.height) / initialSize.cssHeight, true);
       displayView.setUint32(16, resolvedPatternSize, true);
       displayView.setUint32(20, resolvedPatternSize * resolvedPatternSize, true);
-      displayView.setUint32(24, invert ? 1 : 0, true);
-      displayView.setFloat32(28, clamp(contrast, 0.25, 8, 1), true);
+      displayView.setUint32(24, props.invert ? 1 : 0, true);
+      displayView.setFloat32(28, clamp(props.contrast, 0.25, 8, 1), true);
+      let colorCache = { key: `${props.darkDependency}|${props.lightDependency}`, dark: normalizedColor(props.dark), light: normalizedColor(props.light) };
       const colors = new Float32Array(displayData, 32, 8);
-      colors.set(normalizedColor(dark), 0);
-      colors.set(normalizedColor(light), 4);
+      colors.set(colorCache.dark, 0);
+      colors.set(colorCache.light, 4);
       device.queue.writeBuffer(displayParameters, 0, displayData);
 
-      const stateView = state.createView();
-      const advectedView = advectedState.createView();
-      const divergenceView = divergence.createView();
-      const pressureAView = pressureA.createView();
-      const pressureBView = pressureB.createView();
+      let stateView = state.createView();
+      let advectedView = advectedState.createView();
+      let divergenceView = divergence.createView();
+      let pressureAView = pressureA.createView();
+      let pressureBView = pressureB.createView();
       const createComputeBindGroup = (
         label: string,
         primary: GPUTextureView,
@@ -544,30 +599,30 @@ export function BlueNoiseFluid(
         pressureBView,
         divergenceView,
       );
-      const advectBindGroup = createComputeBindGroup(
+      let advectBindGroup = createComputeBindGroup(
         "Advect fluid state",
         stateView,
         advectedView,
         divergenceView,
       );
-      const divergenceBindGroup = createComputeBindGroup(
+      let divergenceBindGroup = createComputeBindGroup(
         "Measure fluid divergence",
         advectedView,
         divergenceView,
         pressureAView,
       );
-      const pressureBindGroups = [
+      let pressureBindGroups = [
         createComputeBindGroup("Solve pressure A to B", pressureAView, pressureBView, divergenceView),
         createComputeBindGroup("Solve pressure B to A", pressureBView, pressureAView, divergenceView),
       ];
       const finalPressureView = PRESSURE_ITERATIONS % 2 === 0 ? pressureAView : pressureBView;
-      const projectBindGroup = createComputeBindGroup(
+      let projectBindGroup = createComputeBindGroup(
         "Project fluid velocity",
         advectedView,
         stateView,
         finalPressureView,
       );
-      const displayBindGroup = device.createBindGroup({
+      let displayBindGroup = device.createBindGroup({
         label: "Blue-noise fluid display",
         layout: pipelines.display.getBindGroupLayout(0),
         entries: [
@@ -596,6 +651,91 @@ export function BlueNoiseFluid(
       let previousSimulationTime = startTime;
       let readyPending = false;
 
+      const rebuildSimulation = (nextWidth: number, nextHeight: number) => {
+        const nextDescriptor: GPUTextureDescriptor = {
+          size: [nextWidth, nextHeight],
+          format: "rgba16float",
+          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING,
+        };
+        const nextState = device.createTexture({ ...nextDescriptor, label: "Fluid state" });
+        const nextAdvectedState = device.createTexture({ ...nextDescriptor, label: "Advected fluid state" });
+        const nextDivergence = device.createTexture({ ...nextDescriptor, label: "Fluid divergence" });
+        const nextPressureA = device.createTexture({ ...nextDescriptor, label: "Fluid pressure A" });
+        const nextPressureB = device.createTexture({ ...nextDescriptor, label: "Fluid pressure B" });
+        const nextStateView = nextState.createView();
+        const nextAdvectedView = nextAdvectedState.createView();
+        const nextDivergenceView = nextDivergence.createView();
+        const nextPressureAView = nextPressureA.createView();
+        const nextPressureBView = nextPressureB.createView();
+
+        simulationView.setUint32(0, nextWidth, true);
+        simulationView.setUint32(4, nextHeight, true);
+        device.queue.writeBuffer(simulationParameters, 0, simulationData);
+
+        const resampleBindGroup = createComputeBindGroup(
+          "Resample fluid state",
+          stateView,
+          nextStateView,
+          stateView,
+        );
+        const resampleEncoder = device.createCommandEncoder({ label: "Resample fluid state" });
+        const resamplePass = resampleEncoder.beginComputePass();
+        resamplePass.setPipeline(pipelines.resample);
+        resamplePass.setBindGroup(0, resampleBindGroup);
+        resamplePass.dispatchWorkgroups(Math.ceil(nextWidth / 8), Math.ceil(nextHeight / 8));
+        resamplePass.end();
+        device.queue.submit([resampleEncoder.finish()]);
+
+        state.destroy();
+        advectedState.destroy();
+        divergence.destroy();
+        pressureA.destroy();
+        pressureB.destroy();
+
+        state = nextState;
+        advectedState = nextAdvectedState;
+        divergence = nextDivergence;
+        pressureA = nextPressureA;
+        pressureB = nextPressureB;
+        if (resources) {
+          resources.state = nextState;
+          resources.advectedState = nextAdvectedState;
+          resources.divergence = nextDivergence;
+          resources.pressureA = nextPressureA;
+          resources.pressureB = nextPressureB;
+        }
+
+        stateView = nextStateView;
+        advectedView = nextAdvectedView;
+        divergenceView = nextDivergenceView;
+        pressureAView = nextPressureAView;
+        pressureBView = nextPressureBView;
+        simulationWidth = nextWidth;
+        simulationHeight = nextHeight;
+        advectBindGroup = createComputeBindGroup("Advect fluid state", stateView, advectedView, divergenceView);
+        divergenceBindGroup = createComputeBindGroup("Measure fluid divergence", advectedView, divergenceView, pressureAView);
+        pressureBindGroups = [
+          createComputeBindGroup("Solve pressure A to B", pressureAView, pressureBView, divergenceView),
+          createComputeBindGroup("Solve pressure B to A", pressureBView, pressureAView, divergenceView),
+        ];
+        projectBindGroup = createComputeBindGroup(
+          "Project fluid velocity",
+          advectedView,
+          stateView,
+          PRESSURE_ITERATIONS % 2 === 0 ? pressureAView : pressureBView,
+        );
+        displayBindGroup = device.createBindGroup({
+          label: "Blue-noise fluid display",
+          layout: pipelines.display.getBindGroupLayout(0),
+          entries: [
+            { binding: 0, resource: { buffer: displayParameters } },
+            { binding: 1, resource: { buffer: patternBuffer } },
+            { binding: 2, resource: stateView },
+            { binding: 3, resource: sampler },
+          ],
+        });
+      };
+
       const drawFrame = (timestamp: number) => {
         if (cancelled) return;
         const elapsed = timestamp - previousFrameTime;
@@ -606,6 +746,22 @@ export function BlueNoiseFluid(
         previousFrameTime = timestamp - (elapsed % FRAME_INTERVAL);
 
         try {
+          const props = propsRef.current;
+          const size = sizeRef.current;
+          if (size && size.cssWidth > 0 && size.cssHeight > 0) {
+            const nextAspect = size.cssWidth / size.cssHeight;
+            const nextWidth = nextAspect >= 1 ? resolvedSimulationSize : Math.max(16, Math.round(resolvedSimulationSize * nextAspect));
+            const nextHeight = nextAspect >= 1 ? Math.max(16, Math.round(resolvedSimulationSize / nextAspect)) : resolvedSimulationSize;
+            if (nextWidth !== simulationWidth || nextHeight !== simulationHeight) {
+              rebuildSimulation(nextWidth, nextHeight);
+            }
+          }
+          const nextPatternSize = Math.round(clamp(props.patternSize, 8, 128, 64));
+          if (nextPatternSize !== resolvedPatternSize) {
+            resolvedPatternSize = nextPatternSize;
+            device.queue.writeBuffer(patternBuffer, 0, generateBlueNoisePattern(nextPatternSize, props.seed));
+          }
+
           const deltaTime =
             clamp((timestamp - previousSimulationTime) / 1000, 1 / 240, 1 / 30, 1 / 60) * SIMULATION_SPEED;
           previousSimulationTime = timestamp;
@@ -617,10 +773,33 @@ export function BlueNoiseFluid(
           simulationView.setFloat32(24, pointer.velocityX, true);
           simulationView.setFloat32(28, pointer.velocityY, true);
           simulationView.setFloat32(32, pointerActive ? 1 : 0, true);
+          simulationView.setFloat32(36, clamp(props.interactionRadius, 0.01, 0.3, 0.05), true);
           simulationView.setFloat32(40, (timestamp - startTime) / 1000, true);
           device.queue.writeBuffer(simulationParameters, 0, simulationData);
           pointer.velocityX *= 0.72;
           pointer.velocityY *= 0.72;
+
+          if (size) {
+            const resolvedScale = Math.max(1, Math.round(props.pixelScale));
+            logicalWidth = Math.ceil(size.cssWidth / resolvedScale);
+            logicalHeight = Math.ceil(size.cssHeight / resolvedScale);
+            displayView.setFloat32(8, (resolvedScale * size.width) / size.cssWidth, true);
+            displayView.setFloat32(12, (resolvedScale * size.height) / size.cssHeight, true);
+          }
+          displayView.setUint32(0, logicalWidth, true);
+          displayView.setUint32(4, logicalHeight, true);
+          displayView.setUint32(16, resolvedPatternSize, true);
+          displayView.setUint32(20, resolvedPatternSize * resolvedPatternSize, true);
+          displayView.setUint32(24, props.invert ? 1 : 0, true);
+          displayView.setFloat32(28, clamp(props.contrast, 0.25, 8, 1), true);
+          const colorKey = `${props.darkDependency}|${props.lightDependency}`;
+          if (colorCache.key !== colorKey) {
+            colorCache = { key: colorKey, dark: normalizedColor(props.dark), light: normalizedColor(props.light) };
+          }
+          const colors = new Float32Array(displayData, 32, 8);
+          colors.set(colorCache.dark, 0);
+          colors.set(colorCache.light, 4);
+          device.queue.writeBuffer(displayParameters, 0, displayData);
 
           const encoder = device.createCommandEncoder({ label: "Fluid simulation frame" });
           const dispatchCompute = (
@@ -671,7 +850,7 @@ export function BlueNoiseFluid(
               const info: FloydSteinbergRenderInfo = {
                 canvas,
                 device,
-                ...renderSize,
+                ...(sizeRef.current ?? initialSize),
                 logicalWidth,
                 logicalHeight,
               };
@@ -694,19 +873,7 @@ export function BlueNoiseFluid(
       if (animationFrame) cancelAnimationFrame(animationFrame);
       destroyResources(resources);
     };
-  }, [
-    renderSize,
-    pixelScale,
-    patternSize,
-    simulationSize,
-    interactionRadius,
-    contrast,
-    invert,
-    seed,
-    darkDependency,
-    lightDependency,
-    powerPreference,
-  ]);
+  }, [simulationSize, seed, powerPreference]);
 
   return (
     <canvas

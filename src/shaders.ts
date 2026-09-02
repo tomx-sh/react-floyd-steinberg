@@ -268,6 +268,16 @@ fn clearScalar(@builtin(global_invocation_id) id: vec3u) {
 }
 
 @compute @workgroup_size(8, 8)
+fn resample(@builtin(global_invocation_id) id: vec3u) {
+  if (any(id.xy >= parameters.size)) {
+    return;
+  }
+  let uv = simulationUv(id.xy);
+  let sampled = textureSampleLevel(previousState, linearSampler, uv, 0.0);
+  textureStore(nextState, vec2i(id.xy), sampled);
+}
+
+@compute @workgroup_size(8, 8)
 fn advect(@builtin(global_invocation_id) id: vec3u) {
   if (any(id.xy >= parameters.size)) {
     return;
