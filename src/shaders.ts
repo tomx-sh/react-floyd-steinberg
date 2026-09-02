@@ -456,3 +456,155 @@ fn fragmentMain(@builtin(position) position: vec4f) -> @location(0) vec4f {
   return select(parameters.dark, parameters.light, source >= threshold);
 }
 `;
+
+export const leniaShader = /* wgsl */ `
+struct Parameters {
+  size: vec2u,
+  deltaTime: f32,
+  seed: u32,
+  pointer: vec2f,
+  pointerActive: f32,
+  interactionRadius: f32,
+  time: f32,
+  mu: f32,
+  sigma: f32,
+  contrast: f32,
+  invert: u32,
+  paddingA: u32,
+  logicalSize: vec2u,
+  cellSize: vec2f,
+  patternSize: u32,
+  paddingB: u32,
+  dark: vec4f,
+  light: vec4f,
+}
+
+const KERNEL_RADIUS = 13i;
+
+@group(0) @binding(0) var<uniform> parameters: Parameters;
+@group(0) @binding(1) var previousState: texture_2d<f32>;
+@group(0) @binding(2) var nextState: texture_storage_2d<rgba16float, write>;
+@group(0) @binding(3) var linearSampler: sampler;
+@group(0) @binding(4) var<storage, read> initialState: array<f32>;
+
+// Exponential kernel core (Chan 2019): a single soft ring peaking at r = 0.5.
+fn kernelWeight(distance: f32) -> f32 {
+  let r = distance / f32(KERNEL_RADIUS);
+  if (r <= 0.0 || r >= 1.0) {
+    return 0.0;
+  }
+  return exp(4.0 - 1.0 / (r * (1.0 - r)));
+}
+
+@compute @workgroup_size(8, 8)
+fn initialize(@builtin(global_invocation_id) id: vec3u) {
+  if (any(id.xy >= parameters.size)) {
+    return;
+  }
+
+  let value = initialState[id.y * parameters.size.x + id.x];
+  textureStore(nextState, vec2i(id.xy), vec4f(value, 0.0, 0.0, 1.0));
+}
+
+@compute @workgroup_size(8, 8)
+fn resample(@builtin(global_invocation_id) id: vec3u) {
+  if (any(id.xy >= parameters.size)) {
+    return;
+  }
+  let uv = (vec2f(id.xy) + vec2f(0.5)) / vec2f(parameters.size);
+  textureStore(nextState, vec2i(id.xy), textureSampleLevel(previousState, linearSampler, uv, 0.0));
+}
+
+@compute @workgroup_size(8, 8)
+fn advance(@builtin(global_invocation_id) id: vec3u) {
+  if (any(id.xy >= parameters.size)) {
+    return;
+  }
+
+  let cell = vec2i(id.xy);
+  let extent = i32(KERNEL_RADIUS);
+  var potential = 0.0;
+  var normalization = 0.0;
+  for (var dy = -extent; dy <= extent; dy += 1) {
+    for (var dx = -extent; dx <= extent; dx += 1) {
+      let weight = kernelWeight(length(vec2f(f32(dx), f32(dy))));
+      if (weight > 0.0) {
+        let sampleX = (cell.x + dx + i32(parameters.size.x)) % i32(parameters.size.x);
+        let sampleY = (cell.y + dy + i32(parameters.size.y)) % i32(parameters.size.y);
+        potential += weight * textureLoad(previousState, vec2i(sampleX, sampleY), 0).x;
+        normalization += weight;
+      }
+    }
+  }
+  potential /= normalization;
+
+  let deviation = potential - parameters.mu;
+  let growth = 2.0 * exp(-deviation * deviation / (2.0 * parameters.sigma * parameters.sigma)) - 1.0;
+  var state = textureLoad(previousState, cell, 0).x + parameters.deltaTime * growth;
+
+  // Pointer interaction injects a soft creature-sized blob.
+  if (parameters.pointerActive > 0.5) {
+    let offset = (vec2f(cell) + vec2f(0.5)) / vec2f(parameters.size) - parameters.pointer;
+    let scaled = offset * vec2f(f32(parameters.size.x), f32(parameters.size.y));
+    let sigmaCells = parameters.interactionRadius * f32(parameters.size.y);
+    let gaussian = 0.95 * exp(-dot(scaled, scaled) / (2.0 * sigmaCells * sigmaCells));
+    state = max(state, gaussian);
+  }
+
+  textureStore(nextState, cell, vec4f(clamp(state, 0.0, 1.0), 0.0, 0.0, 1.0));
+}
+`;
+
+export const blueNoiseLeniaShader = /* wgsl */ `
+struct Parameters {
+  size: vec2u,
+  deltaTime: f32,
+  seed: u32,
+  pointer: vec2f,
+  pointerActive: f32,
+  interactionRadius: f32,
+  time: f32,
+  mu: f32,
+  sigma: f32,
+  contrast: f32,
+  invert: u32,
+  paddingA: u32,
+  logicalSize: vec2u,
+  cellSize: vec2f,
+  patternSize: u32,
+  paddingB: u32,
+  dark: vec4f,
+  light: vec4f,
+}
+
+@group(0) @binding(0) var<uniform> parameters: Parameters;
+@group(0) @binding(1) var<storage, read> noiseRanks: array<u32>;
+@group(0) @binding(2) var leniaState: texture_2d<f32>;
+@group(0) @binding(3) var linearSampler: sampler;
+@group(0) @binding(4) var previousLeniaState: texture_2d<f32>;
+
+@vertex
+fn vertexMain(@builtin(vertex_index) index: u32) -> @builtin(position) vec4f {
+  let x = f32((index << 1u) & 2u);
+  let y = f32(index & 2u);
+  return vec4f(x * 2.0 - 1.0, 1.0 - y * 2.0, 0.0, 1.0);
+}
+
+@fragment
+fn fragmentMain(@builtin(position) position: vec4f) -> @location(0) vec4f {
+  let safeLogicalSize = max(parameters.logicalSize, vec2u(1u));
+  let safeCellSize = max(parameters.cellSize, vec2f(0.0001));
+  let cell = min(vec2u(position.xy / safeCellSize), safeLogicalSize - vec2u(1u));
+  let uv = (vec2f(cell) + vec2f(0.5)) / vec2f(safeLogicalSize);
+  let currentState = textureSampleLevel(leniaState, linearSampler, uv, 0.0).x;
+  let previousState = textureSampleLevel(previousLeniaState, linearSampler, uv, 0.0).x;
+  let state = mix(previousState, currentState, clamp(parameters.time, 0.0, 1.0));
+  var luminance = smoothstep(0.04, 0.5, state);
+  luminance = clamp((luminance - 0.5) * parameters.contrast + 0.5, 0.0, 1.0);
+  let source = select(luminance, 1.0 - luminance, parameters.invert != 0u);
+  let patternCell = cell % vec2u(parameters.patternSize);
+  let rank = noiseRanks[patternCell.y * parameters.patternSize + patternCell.x];
+  let threshold = (f32(rank) + 0.5) / f32(parameters.patternSize * parameters.patternSize);
+  return select(parameters.dark, parameters.light, source >= threshold);
+}
+`;

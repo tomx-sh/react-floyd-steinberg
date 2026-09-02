@@ -16,4 +16,8 @@ export {
   type BlueNoiseFluidQuantity,
   type BlueNoiseFluidProps,
 } from "./BlueNoiseFluid";
+export {
+  BlueNoiseLenia,
+  type BlueNoiseLeniaProps,
+} from "./BlueNoiseLenia";
 export { displayShader, floydSteinbergShader } from "./shaders";
