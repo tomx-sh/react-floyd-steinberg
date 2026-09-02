@@ -470,7 +470,7 @@ struct Parameters {
   sigma: f32,
   contrast: f32,
   invert: u32,
-  paddingA: u32,
+  kernelRadius: u32,
   logicalSize: vec2u,
   cellSize: vec2f,
   patternSize: u32,
@@ -478,8 +478,6 @@ struct Parameters {
   dark: vec4f,
   light: vec4f,
 }
-
-const KERNEL_RADIUS = 13i;
 
 @group(0) @binding(0) var<uniform> parameters: Parameters;
 @group(0) @binding(1) var previousState: texture_2d<f32>;
@@ -489,7 +487,7 @@ const KERNEL_RADIUS = 13i;
 
 // Exponential kernel core (Chan 2019): a single soft ring peaking at r = 0.5.
 fn kernelWeight(distance: f32) -> f32 {
-  let r = distance / f32(KERNEL_RADIUS);
+  let r = distance / f32(parameters.kernelRadius);
   if (r <= 0.0 || r >= 1.0) {
     return 0.0;
   }
@@ -522,7 +520,7 @@ fn advance(@builtin(global_invocation_id) id: vec3u) {
   }
 
   let cell = vec2i(id.xy);
-  let extent = i32(KERNEL_RADIUS);
+  let extent = i32(parameters.kernelRadius);
   var potential = 0.0;
   var normalization = 0.0;
   for (var dy = -extent; dy <= extent; dy += 1) {
@@ -568,7 +566,7 @@ struct Parameters {
   sigma: f32,
   contrast: f32,
   invert: u32,
-  paddingA: u32,
+  kernelRadius: u32,
   logicalSize: vec2u,
   cellSize: vec2f,
   patternSize: u32,

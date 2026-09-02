@@ -11,6 +11,14 @@ import type {
   FloydSteinbergProps,
   FloydSteinbergRenderInfo,
 } from "./FloydSteinberg";
+import { createLeniaInitialState } from "./leniaSeed";
+import {
+  DEFAULT_LENIA_SPECIES,
+  getLeniaScenePreset,
+  getLeniaSpeciesPreset,
+  type LeniaScenePresetId,
+  type LeniaSpeciesId,
+} from "./leniaPresets";
 import { blueNoiseLeniaShader, leniaShader } from "./shaders";
 import { createCheckedModule, getSharedDevice } from "./webgpu";
 
@@ -20,30 +28,6 @@ const FRAME_INTERVAL = 1000 / 60;
 const SIMULATION_INTERVAL = 1000 / 4;
 const DEFAULT_DARK: FloydSteinbergColor = [0, 0, 0, 1];
 const DEFAULT_LIGHT: FloydSteinbergColor = [1, 1, 1, 1];
-// Orbium unicaudatus (O2u), from Bert Chan's canonical Lenia creature catalog.
-// Values use Lenia's compact 8-bit RLE encoding and decode to a 20 × 20 seed.
-const ORBIUM_RLE = [
-  "7.MD6.qL",
-  "6.pKqEqFURpApBRAqQ",
-  "5.VqTrSsBrOpXpWpTpWpUpCrQ",
-  "4.CQrQsTsWsApITNPpGqGvL",
-  "3.IpIpWrOsGsBqXpJ4.LsFrL",
-  "A.DpKpSpJpDqOqUqSqE5.ExD",
-  "qL.pBpTT2.qCrGrVrWqM5.sTpP",
-  ".pGpWpD3.qUsMtItQtJ6.tL",
-  ".uFqGH3.pXtOuR2vFsK5.sM",
-  ".tUqL4.GuNwAwVxBwNpC4.qXpA",
-  "2.uH5.vBxGyEyMyHtW4.qIpL",
-  "2.wV5.tIyG3yOxQqW2.FqHpJ",
-  "2.tUS4.rM2yOyJyOyHtVpPMpFqNV",
-  "2.HsR4.pUxAyOxLxDxEuVrMqBqGqKJ",
-  "3.sLpE3.pEuNxHwRwGvUuLsHrCqTpR",
-  "3.TrMS2.pFsLvDvPvEuPtNsGrGqIP",
-  "4.pRqRpNpFpTrNtGtVtStGsMrNqNpF",
-  "5.pMqKqLqRrIsCsLsIrTrFqJpHE",
-  "6.RpSqJqPqVqWqRqKpRXE",
-  "8.OpBpIpJpFTK",
-].join("$");
 let cssColorContext: CanvasRenderingContext2D | undefined;
 
 export interface BlueNoiseLeniaProps
@@ -55,6 +39,10 @@ export interface BlueNoiseLeniaProps
   patternSize?: number;
   /** Longest automaton-grid dimension. Defaults to 256; clamped to 64–384. */
   simulationSize?: number;
+  /** Catalogued Lenia species used to initialize the field. */
+  species?: LeniaSpeciesId;
+  /** Optional scene preset that controls both species and initial placement. */
+  preset?: LeniaScenePresetId;
   /** Pointer injection radius in normalized canvas units. Defaults to 0.05. */
   interactionRadius?: number;
   /**
@@ -226,93 +214,6 @@ function colorDependency(color: FloydSteinbergColor): string {
   return typeof color === "string" ? `css:${color}` : `tuple:${color.join(",")}`;
 }
 
-function decodeLeniaRle(value: string): number[][] {
-  const rows: number[][] = [[]];
-  let count = "";
-
-  for (let index = 0; index < value.length; index += 1) {
-    const character = value[index];
-    if (character >= "0" && character <= "9") {
-      count += character;
-      continue;
-    }
-    if (character === "$") {
-      const repetitions = count ? Number(count) : 1;
-      for (let repetition = 0; repetition < repetitions; repetition += 1) rows.push([]);
-      count = "";
-      continue;
-    }
-
-    let encoded = character;
-    if (character >= "p" && character <= "y") {
-      encoded += value[index + 1];
-      index += 1;
-    }
-    const decoded =
-      encoded === "." || encoded === "b"
-        ? 0
-        : encoded === "o"
-          ? 255
-          : encoded.length === 1
-            ? encoded.charCodeAt(0) - 64
-            : (encoded.charCodeAt(0) - 112) * 24 + (encoded.charCodeAt(1) - 65 + 25);
-    const repetitions = count ? Number(count) : 1;
-    for (let repetition = 0; repetition < repetitions; repetition += 1) {
-      rows[rows.length - 1].push(decoded / 255);
-    }
-    count = "";
-  }
-  return rows;
-}
-
-const ORBIUM_CELLS = decodeLeniaRle(ORBIUM_RLE);
-const ORBIUM_WIDTH = Math.max(...ORBIUM_CELLS.map((row) => row.length));
-
-function createOrbiumInitialState(width: number, height: number, seed: number): Float32Array {
-  const state = new Float32Array(width * height);
-  const placements =
-    Math.min(width, height) >= 64
-      ? ([
-          [0.2, 0.25, 0],
-          [0.6, 0.25, 0],
-          [0.4, 0.55, 0],
-        ] as const)
-      : ([[0.5, 0.5, 0]] as const);
-
-  for (const [centerX, centerY, baseRotation] of placements) {
-    const rotation = (baseRotation + (seed & 3)) & 3;
-    const rotatedWidth = rotation % 2 === 0 ? ORBIUM_WIDTH : ORBIUM_CELLS.length;
-    const rotatedHeight = rotation % 2 === 0 ? ORBIUM_CELLS.length : ORBIUM_WIDTH;
-    const originX = Math.round(centerX * width - rotatedWidth / 2);
-    const originY = Math.round(centerY * height - rotatedHeight / 2);
-
-    for (let sourceY = 0; sourceY < ORBIUM_CELLS.length; sourceY += 1) {
-      const row = ORBIUM_CELLS[sourceY];
-      for (let sourceX = 0; sourceX < row.length; sourceX += 1) {
-        let rotatedX = sourceX;
-        let rotatedY = sourceY;
-        if (rotation === 1) {
-          rotatedX = ORBIUM_CELLS.length - 1 - sourceY;
-          rotatedY = sourceX;
-        } else if (rotation === 2) {
-          rotatedX = ORBIUM_WIDTH - 1 - sourceX;
-          rotatedY = ORBIUM_CELLS.length - 1 - sourceY;
-        } else if (rotation === 3) {
-          rotatedX = sourceY;
-          rotatedY = ORBIUM_WIDTH - 1 - sourceX;
-        }
-        const targetX = originX + rotatedX;
-        const targetY = originY + rotatedY;
-        if (targetX < 0 || targetX >= width || targetY < 0 || targetY >= height) continue;
-        const targetIndex = targetY * width + targetX;
-        state[targetIndex] = Math.max(state[targetIndex], row[sourceX]);
-      }
-    }
-  }
-
-  return state;
-}
-
 function destroyResources(resources: RenderResources | undefined) {
   resources?.parameters.destroy();
   resources?.pattern.destroy();
@@ -328,6 +229,8 @@ export function BlueNoiseLenia(
     pixelScale = 2,
     patternSize = 64,
     simulationSize = 256,
+    species = DEFAULT_LENIA_SPECIES,
+    preset,
     interactionRadius = 0.05,
     contrast = 1,
     invert = false,
@@ -360,9 +263,10 @@ export function BlueNoiseLenia(
   onErrorRef.current = onError;
   const sizeRef = useRef<RenderSize | undefined>(undefined);
   const propsRef = useRef<
-    Required<Pick<BlueNoiseLeniaProps, "pixelScale" | "patternSize" | "simulationSize" | "interactionRadius" | "contrast" | "invert" | "seed" | "powerPreference">> & {
+    Required<Pick<BlueNoiseLeniaProps, "pixelScale" | "patternSize" | "simulationSize" | "species" | "interactionRadius" | "contrast" | "invert" | "seed" | "powerPreference">> & {
       darkDependency: string;
       lightDependency: string;
+      preset: LeniaScenePresetId | undefined;
       dark: FloydSteinbergColor;
       light: FloydSteinbergColor;
     }
@@ -370,6 +274,8 @@ export function BlueNoiseLenia(
     pixelScale,
     patternSize,
     simulationSize,
+    species,
+    preset,
     interactionRadius,
     contrast,
     invert,
@@ -384,6 +290,8 @@ export function BlueNoiseLenia(
     pixelScale,
     patternSize,
     simulationSize,
+    species,
+    preset,
     interactionRadius,
     contrast,
     invert,
@@ -507,6 +415,8 @@ export function BlueNoiseLenia(
 
     const setup = async () => {
       const props = propsRef.current;
+      const scenePreset = props.preset ? getLeniaScenePreset(props.preset) : undefined;
+      const speciesPreset = getLeniaSpeciesPreset(scenePreset?.species ?? props.species);
       const resolvedSimulationSize = Math.round(clamp(props.simulationSize, 64, 384, 256));
       let resolvedPatternSize = Math.round(clamp(props.patternSize, 8, 128, 64));
       const initialSize = sizeRef.current ?? {
@@ -553,9 +463,15 @@ export function BlueNoiseLenia(
         size: 128 * 128 * 4,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
       });
-      const initialStateData = createOrbiumInitialState(simulationWidth, simulationHeight, props.seed);
+      const initialStateData = createLeniaInitialState(
+        simulationWidth,
+        simulationHeight,
+        speciesPreset,
+        props.seed,
+        scenePreset,
+      );
       const initialStateBuffer = device.createBuffer({
-        label: "Orbium initial state",
+        label: `${speciesPreset.name} initial state`,
         size: initialStateData.byteLength,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
       });
@@ -588,11 +504,12 @@ export function BlueNoiseLenia(
       const parameterView = new DataView(parameterData);
       parameterView.setUint32(0, simulationWidth, true);
       parameterView.setUint32(4, simulationHeight, true);
-      parameterView.setFloat32(8, 0.1, true);
+      parameterView.setFloat32(8, 1 / speciesPreset.timeResolution, true);
       parameterView.setUint32(12, props.seed >>> 0, true);
       parameterView.setFloat32(32, 0, true);
-      parameterView.setFloat32(36, 0.15, true);
-      parameterView.setFloat32(40, 0.015, true);
+      parameterView.setFloat32(36, speciesPreset.mu, true);
+      parameterView.setFloat32(40, speciesPreset.sigma, true);
+      parameterView.setUint32(52, speciesPreset.radius, true);
       parameterView.setUint32(72, resolvedPatternSize, true);
       device.queue.writeBuffer(parameters, 0, parameterData);
 
@@ -831,7 +748,7 @@ export function BlueNoiseLenia(
       if (animationFrame) cancelAnimationFrame(animationFrame);
       destroyResources(resources);
     };
-  }, [simulationSize, seed, powerPreference]);
+  }, [simulationSize, species, preset, seed, powerPreference]);
 
   return (
     <canvas

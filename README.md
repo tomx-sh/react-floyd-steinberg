@@ -155,7 +155,7 @@ export function DitheredFluid() {
 
 ## Continuous cellular automaton example
 
-`BlueNoiseLenia` runs a Lenia continuous cellular automaton on the GPU, then applies the same fixed blue-noise threshold tile. It starts from three copies of Bert Chan's canonical *Orbium unicaudatus* seed. Each step convolves the state field with a single soft ring kernel (radius 13 cells), passes the potential through a Gaussian growth function centered at `0.15` with width `0.015`, and integrates with the catalogued `dt = 0.1` on a torus. The demo advances the simulation at four steps per second and interpolates the two latest states at display rate, keeping the motion slow and smooth without destabilizing the creatures.
+`BlueNoiseLenia` runs a Lenia continuous cellular automaton on the GPU, then applies the same fixed blue-noise threshold tile. The reusable `LENIA_SPECIES_PRESETS` catalog stores species cells and dynamics, while `LENIA_SCENE_PRESETS` stores reusable arrangements and orientations. The demo advances the selected preset at four steps per second and interpolates the two latest states at display rate, keeping motion slow and smooth without destabilizing the creatures.
 
 ```tsx
 import { BlueNoiseLenia } from "react-floyd-steinberg";
@@ -168,6 +168,7 @@ export function DitheredLenia() {
       pixelScale={3}
       patternSize={64}
       simulationSize={128}
+      preset="orbium-unicaudatus-solo-up"
       dark="oklch(18% 0.03 255)"
       light="oklch(94% 0.04 90)"
       style={{ width: "100%", height: "auto" }}
@@ -176,7 +177,7 @@ export function DitheredLenia() {
 }
 ```
 
-Moving the pointer across the canvas injects a soft creature-sized blob into the field; `interactionRadius` controls its size in normalized canvas units. The `contrast` prop (default `1`, clamped to `0.25…8`) adjusts how much of the field is dithered to the light color. `simulationSize` is clamped to `64…384`; lower values make each fixed-size Orbium larger on screen, while higher values provide more room between creatures at proportionally higher GPU cost per frame. `pixelScale` independently controls the visible blue-noise dither-cell size.
+The `species` prop accepts any exported `LeniaSpeciesId`; omit it to use *Orbium unicaudatus*. A `preset` selects an exported `LeniaScenePresetId` and controls both species and placement. The `orbium-unicaudatus-solo-up` scene anchors one fully visible creature in the bottom-right corner and rotates its natural velocity vertically upward. Moving the pointer across the canvas injects a soft creature-sized blob into the field; `interactionRadius` controls its size in normalized canvas units. The `contrast` prop (default `1`, clamped to `0.25…8`) adjusts how much of the field is dithered to the light color. `simulationSize` is clamped to `64…384`; lower values make each creature larger on screen, while higher values provide more room at proportionally higher GPU cost per frame. `pixelScale` independently controls the visible blue-noise dither-cell size.
 
 ## Local playground
 

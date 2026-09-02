@@ -20,4 +20,16 @@ export {
   BlueNoiseLenia,
   type BlueNoiseLeniaProps,
 } from "./BlueNoiseLenia";
+export {
+  DEFAULT_LENIA_SPECIES,
+  getLeniaScenePreset,
+  getLeniaSpeciesPreset,
+  LENIA_SCENE_PRESETS,
+  LENIA_SPECIES_PRESETS,
+  type LeniaScenePlacement,
+  type LeniaScenePreset,
+  type LeniaScenePresetId,
+  type LeniaSpeciesId,
+  type LeniaSpeciesPreset,
+} from "./leniaPresets";
 export { displayShader, floydSteinbergShader } from "./shaders";

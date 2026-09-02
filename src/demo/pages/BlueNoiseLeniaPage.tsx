@@ -1,10 +1,19 @@
 import { useState } from "react";
-import { BlueNoiseLenia, isWebGpuSupported } from "../../index";
+import {
+  BlueNoiseLenia,
+  getLeniaScenePreset,
+  getLeniaSpeciesPreset,
+  isWebGpuSupported,
+} from "../../index";
 import { BackLink } from "./BackLink";
+
+const pageSeed = crypto.getRandomValues(new Uint32Array(1))[0];
+const pagePreset = getLeniaScenePreset("orbium-unicaudatus-solo-up");
+const pageSpecies = getLeniaSpeciesPreset(pagePreset.species);
 
 export function BlueNoiseLeniaPage() {
   const [status, setStatus] = useState(
-    isWebGpuSupported() ? "Seeding Lenia automaton…" : "WebGPU is unavailable.",
+    isWebGpuSupported() ? `Seeding ${pageSpecies.name}…` : "WebGPU is unavailable.",
   );
   const [contrast, setContrast] = useState(1);
 
@@ -16,9 +25,9 @@ export function BlueNoiseLeniaPage() {
         <h1>Blue-noise Lenia</h1>
         <p className="intro">
           A Lenia continuous cellular automaton evolves on the GPU and is
-          dithered through the same fixed blue-noise tile. Three enlarged
-          Orbium walkers start far apart so their shape and motion stay easy
-          to follow; move the pointer across the canvas to perturb them.
+          dithered through a freshly seeded blue-noise tile. One enlarged{" "}
+          <i>{pageSpecies.name}</i> starts fully visible in the bottom-right
+          corner and travels vertically upward.
         </p>
       </header>
 
@@ -45,10 +54,12 @@ export function BlueNoiseLeniaPage() {
           pixelScale={1}
           patternSize={64}
           simulationSize={128}
+          preset={pagePreset.id}
+          seed={pageSeed}
           contrast={contrast}
           dark="rgb(0,0,0)"
           light="rgb(255,255,255)"
-          onReady={() => setStatus("Three Orbium walkers evolving in an isolated field.")}
+          onReady={() => setStatus(`${pagePreset.name} · seed ${pageSeed}`)}
           onError={(error) => setStatus(error.message)}
         />
         <figcaption aria-live="polite">{status}</figcaption>
