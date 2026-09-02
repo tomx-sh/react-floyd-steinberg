@@ -127,6 +127,8 @@ The component accepts the relevant sizing, color, inversion, seed, canvas, and c
 
 `BlueNoiseFluid` runs a small projected velocity-and-temperature simulation, then applies the same fixed blue-noise threshold tile. Its perimeter is a hard, zero-velocity wall; the lower edge is hot and the upper edge is cold. Buoyancy and tiny seeded variations in the plate produce convection plumes without changing randomly from frame to frame. Output luminance comes from velocity magnitude, so faster regions appear lighter. Move the pointer over the canvas—or drag on touch devices—to inject velocity and disturb the flow.
 
+The `contrast` prop (default `1`, clamped to `0.25…8`) applies a contrast post process to the velocity field before dithering: values above `1` push luminance away from its midpoint and grow the colored areas, while values below `1` shrink them.
+
 ```tsx
 import { BlueNoiseFluid } from "react-floyd-steinberg";
 

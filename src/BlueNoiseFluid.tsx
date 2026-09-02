@@ -32,6 +32,12 @@ export interface BlueNoiseFluidProps
   simulationSize?: number;
   /** Pointer injection radius in normalized canvas units. Defaults to 0.05. */
   interactionRadius?: number;
+  /**
+   * Contrast applied to the velocity-derived luminance before dithering.
+   * Values above 1 grow the colored (light) areas; values below 1 shrink
+   * them toward noise. Defaults to 1; clamped to 0.25–8.
+   */
+  contrast?: number;
 }
 
 interface Pipelines {
@@ -234,6 +240,7 @@ export function BlueNoiseFluid(
     patternSize = 64,
     simulationSize = 192,
     interactionRadius = 0.05,
+    contrast = 1,
     invert = false,
     seed = 0x5eed1234,
     dark = DEFAULT_DARK,
@@ -490,6 +497,7 @@ export function BlueNoiseFluid(
       displayView.setUint32(16, resolvedPatternSize, true);
       displayView.setUint32(20, resolvedPatternSize * resolvedPatternSize, true);
       displayView.setUint32(24, invert ? 1 : 0, true);
+      displayView.setFloat32(28, clamp(contrast, 0.25, 8, 1), true);
       const colors = new Float32Array(displayData, 32, 8);
       colors.set(normalizedColor(dark), 0);
       colors.set(normalizedColor(light), 4);
@@ -692,6 +700,7 @@ export function BlueNoiseFluid(
     patternSize,
     simulationSize,
     interactionRadius,
+    contrast,
     invert,
     seed,
     darkDependency,

@@ -51,6 +51,7 @@ function App() {
   const [fluidStatus, setFluidStatus] = useState(
     isWebGpuSupported() ? "Starting fluid simulation…" : "WebGPU is unavailable.",
   );
+  const [fluidContrast, setFluidContrast] = useState(1);
 
   const handleReady = useCallback((info: FloydSteinbergRenderInfo) => {
     setStatus(
@@ -172,6 +173,19 @@ function App() {
         <p className="eyebrow">Interactive example</p>
         <h2>Blue-noise fluid</h2>
         <p className="intro">A hot lower wall and cold upper wall drive convection plumes; brighter regions show faster flow. Move or drag to disturb it.</p>
+        <label>
+          <span>
+            Contrast <output>{fluidContrast.toFixed(2)}</output>
+          </span>
+          <input
+            type="range"
+            min="0.25"
+            max="8"
+            step="0.05"
+            value={fluidContrast}
+            onChange={(event) => setFluidContrast(event.currentTarget.valueAsNumber)}
+          />
+        </label>
       </section>
 
       <figure>
@@ -181,6 +195,7 @@ function App() {
           pixelScale={1}
           patternSize={64}
           simulationSize={192}
+          contrast={fluidContrast}
           dark="rgb(255, 255, 255)" // White
           light="rgb(200, 200, 200)" // Gray
           onReady={(info) => setFluidStatus(`Simulating and dithering ${info.logicalWidth} × ${info.logicalHeight} cells.`)}

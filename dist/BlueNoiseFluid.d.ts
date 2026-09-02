@@ -6,5 +6,11 @@ export interface BlueNoiseFluidProps extends Omit<FloydSteinbergProps, "alphaBac
     simulationSize?: number;
     /** Pointer injection radius in normalized canvas units. Defaults to 0.05. */
     interactionRadius?: number;
+    /**
+     * Contrast applied to the velocity-derived luminance before dithering.
+     * Values above 1 grow the colored (light) areas; values below 1 shrink
+     * them toward noise. Defaults to 1; clamped to 0.25–8.
+     */
+    contrast?: number;
 }
-export declare function BlueNoiseFluid({ width, height, pixelScale, patternSize, simulationSize, interactionRadius, invert, seed, dark, light, powerPreference, onReady, onError, ref, style, "aria-label": ariaLabel, ...canvasProps }: BlueNoiseFluidProps): import("react").JSX.Element;
+export declare function BlueNoiseFluid({ width, height, pixelScale, patternSize, simulationSize, interactionRadius, contrast, invert, seed, dark, light, powerPreference, onReady, onError, ref, style, "aria-label": ariaLabel, ...canvasProps }: BlueNoiseFluidProps): import("react").JSX.Element;

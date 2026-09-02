@@ -416,7 +416,7 @@ struct Parameters {
   patternSize: u32,
   patternArea: u32,
   invert: u32,
-  padding: u32,
+  contrast: f32,
   dark: vec4f,
   light: vec4f,
 }
@@ -440,7 +440,10 @@ fn fragmentMain(@builtin(position) position: vec4f) -> @location(0) vec4f {
   let cell = min(vec2u(position.xy / safeCellSize), safeLogicalSize - vec2u(1u));
   let uv = (vec2f(cell) + vec2f(0.5)) / vec2f(safeLogicalSize);
   let velocity = textureSampleLevel(fluidState, linearSampler, uv, 0.0).xy;
-  let luminance = smoothstep(0.015, 0.16, length(velocity));
+  var luminance = smoothstep(0.015, 0.16, length(velocity));
+  // Expand or collapse the colored areas by pushing luminance away from or
+  // toward its midpoint before the blue-noise threshold comparison.
+  luminance = clamp((luminance - 0.5) * parameters.contrast + 0.5, 0.0, 1.0);
   let source = select(luminance, 1.0 - luminance, parameters.invert != 0u);
   let patternCell = cell % vec2u(parameters.patternSize);
   let rank = noiseRanks[patternCell.y * parameters.patternSize + patternCell.x];
