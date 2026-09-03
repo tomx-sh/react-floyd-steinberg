@@ -27,6 +27,7 @@ export {
   LENIA_SCENE_PRESETS,
   LENIA_SPECIES_PRESETS,
   type LeniaScenePlacement,
+  type LeniaPosition,
   type LeniaScenePreset,
   type LeniaScenePresetId,
   type LeniaSpeciesId,

@@ -7,12 +7,25 @@ export interface LeniaSpeciesPreset {
   radius: number;
   /** Number of integration steps per unit of Lenia time. */
   timeResolution: number;
-  /** Center of the Gaussian growth function. */
+  /** Center of the growth function. */
   mu: number;
-  /** Width of the Gaussian growth function. */
+  /** Width of the growth function. */
   sigma: number;
+  /** Relative strength of up to four concentric kernel bands, inner to outer. */
+  kernelPeaks: readonly [number, number?, number?, number?];
+  /** Shape applied inside each kernel band. */
+  kernelCore: "bump4" | "quad4";
+  /** Shape of the response around mu. */
+  growthFunction: "gaussian" | "quad4";
   /** Lenia's compact 8-bit RLE representation of the initial cells. */
   cells: string;
+}
+
+export interface LeniaPosition {
+  /** Horizontal center in normalized canvas coordinates (0 = left, 1 = right). */
+  x: number;
+  /** Vertical center in normalized canvas coordinates (0 = top, 1 = bottom). */
+  y: number;
 }
 
 export interface LeniaScenePlacement {
@@ -24,7 +37,7 @@ export interface LeniaScenePlacement {
   y?: number;
   /** Clockwise degrees applied to the catalogued seed. */
   rotation: number;
-  /** Empty simulation cells between a corner-anchored seed and each edge. */
+  /** Minimum empty simulation cells between the seed and each edge. */
   margin?: number;
 }
 
@@ -47,6 +60,9 @@ export const LENIA_SPECIES_PRESETS = [
     timeResolution: 10,
     mu: 0.15,
     sigma: 0.015,
+    kernelPeaks: [1],
+    kernelCore: "bump4",
+    growthFunction: "gaussian",
     cells: rows(
       "7.MD6.qL",
       "6.pKqEqFURpApBRAqQ",
@@ -77,6 +93,9 @@ export const LENIA_SPECIES_PRESETS = [
     timeResolution: 10,
     mu: 0.15,
     sigma: 0.014,
+    kernelPeaks: [1],
+    kernelCore: "bump4",
+    growthFunction: "gaussian",
     cells: rows(
       "13.pK",
       "14.qV",
@@ -107,6 +126,9 @@ export const LENIA_SPECIES_PRESETS = [
     timeResolution: 10,
     mu: 0.156,
     sigma: 0.0224,
+    kernelPeaks: [1],
+    kernelCore: "bump4",
+    growthFunction: "gaussian",
     cells: rows(
       "10.EL2QLE",
       "7.TpU2qHqCpXpUpNpFL",
@@ -133,6 +155,41 @@ export const LENIA_SPECIES_PRESETS = [
       "7.pIrNqHpKQ",
     ),
   },
+  {
+    id: "tricircium-inversus",
+    name: "Tricircium inversus",
+    radius: 18,
+    timeResolution: 10,
+    mu: 0.25,
+    sigma: 0.03,
+    kernelPeaks: [1, 1 / 3],
+    kernelCore: "quad4",
+    growthFunction: "quad4",
+    cells: rows(
+      "6.VrQ2tJrQT",
+      "5.sUxH3yOxWuUpU",
+      "4.tOyG7yOqW",
+      "3.rDxC9yOxR",
+      "3.tD3yOxRwLwAwDwX4yO",
+      "3.vW2yOwSuXuKuFtTtB2.vO2yO",
+      "3.2yOxPuItO2tQtB4.E2yO",
+      "2.pI2yOuFLrDtGuCtO5.yB2yOB",
+      "2.wLyOvT3.qWyGxPqO4.qJ2yOvRpA",
+      "2.2yO4.pPtVvMrVqO3.rQxR2yOuFJ",
+      "2.2yO4.pFsPuCtOsHtL.qWtQwI2yOxRrN",
+      "2.2yO4.pSsRtVuCvTyOuStQuCvT3yOtV",
+      ".qE2yOqH3.pDtVtLsWtQyGuKtVuIvW3yOuN",
+      ".sR2yOwDrXqErQtJqOqMpPpKJsRtLuKwQ3yOtO",
+      "OuF2yOxEuItLtJtLqC5.tGvByG3yOrA",
+      "pDvO2yOyDvMuItTtD6.uAxJ3yOvO",
+      "OvR3yOxEvJuNtT6.yG2yOyBvRqH",
+      ".tV4yOxRwSwDvG3.pD3yOxRsMpK",
+      ".pXxE13yOqH",
+      "2.rSxP9yOvR",
+      "3.rAvTyByIxRxHuUrG",
+      "4.JqTsHsCqH",
+    ),
+  },
 ] as const satisfies readonly LeniaSpeciesPreset[];
 
 export type LeniaSpeciesId = (typeof LENIA_SPECIES_PRESETS)[number]["id"];
@@ -145,6 +202,12 @@ export const LENIA_SCENE_PRESETS = [
     name: "Solo upward Orbium",
     species: "orbium-unicaudatus",
     placements: [{ anchor: "bottom-right", rotation: 200, margin: 4 }],
+  },
+  {
+    id: "tricircium-inversus-solo",
+    name: "Solo Tricircium inversus",
+    species: "tricircium-inversus",
+    placements: [{ anchor: "normalized", x: 0.5, y: 0.5, rotation: 0, margin: 2 }],
   },
 ] as const satisfies readonly LeniaScenePreset[];
 

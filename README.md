@@ -7,18 +7,18 @@ The source can be an image URL, `File`/`Blob`, `ImageBitmap`, image element, or 
 ## Install
 
 ```sh
-npm install github:<github-user>/react-floyd-steinberg#v0.4.1
-pnpm add github:<github-user>/react-floyd-steinberg#v0.4.1
-bun add github:<github-user>/react-floyd-steinberg#v0.4.1
+npm install github:<github-user>/react-floyd-steinberg#v0.5.0
+pnpm add github:<github-user>/react-floyd-steinberg#v0.5.0
+bun add github:<github-user>/react-floyd-steinberg#v0.5.0
 ```
 
 Replace `<github-user>` with the repository owner's GitHub username. The equivalent full Git URL works with all three package managers:
 
 ```sh
-npm install git+https://github.com/<github-user>/react-floyd-steinberg.git#v0.4.1
+npm install git+https://github.com/<github-user>/react-floyd-steinberg.git#v0.5.0
 ```
 
-A tag such as `#v0.4.1` is recommended so application installs remain reproducible. You can instead select:
+A tag such as `#v0.5.0` is recommended so application installs remain reproducible. You can instead select:
 
 - `#main` for the latest commit on the main branch.
 - `#<commit-sha>` for one exact commit.
@@ -29,7 +29,7 @@ The dependency will be stored in the consuming application's `package.json`, for
 ```json
 {
   "dependencies": {
-    "react-floyd-steinberg": "github:<github-user>/react-floyd-steinberg#v0.4.1"
+    "react-floyd-steinberg": "github:<github-user>/react-floyd-steinberg#v0.5.0"
   }
 }
 ```
@@ -167,8 +167,10 @@ export function DitheredLenia() {
       height={600}
       pixelScale={3}
       patternSize={64}
-      simulationSize={128}
-      preset="orbium-unicaudatus-solo-up"
+      simulationSize={192}
+      preset="tricircium-inversus-solo"
+      position={{ x: 2 / 3, y: 0.5 }}
+      spatialScale={1.75}
       dark="oklch(18% 0.03 255)"
       light="oklch(94% 0.04 90)"
       style={{ width: "100%", height: "auto" }}
@@ -177,7 +179,7 @@ export function DitheredLenia() {
 }
 ```
 
-The `species` prop accepts any exported `LeniaSpeciesId`; omit it to use *Orbium unicaudatus*. A `preset` selects an exported `LeniaScenePresetId` and controls both species and placement. The `orbium-unicaudatus-solo-up` scene anchors one fully visible creature in the bottom-right corner and rotates its natural velocity vertically upward. Moving the pointer across the canvas injects a soft creature-sized blob into the field; `interactionRadius` controls its size in normalized canvas units. The `contrast` prop (default `1`, clamped to `0.25…8`) adjusts how much of the field is dithered to the light color. `simulationSize` is clamped to `64…384`; lower values make each creature larger on screen, while higher values provide more room at proportionally higher GPU cost per frame. `pixelScale` independently controls the visible blue-noise dither-cell size.
+The `species` prop accepts any exported `LeniaSpeciesId`; omit it to use *Orbium unicaudatus*. A `preset` selects an exported `LeniaScenePresetId` and controls both species and placement. The catalog includes `orbium-unicaudatus-solo-up` and the two-band, polynomial-growth `tricircium-inversus-solo` oscillator. `position={{ x, y }}` overrides the first creature's normalized center, while `spatialScale` proportionally enlarges both its seed and kernel for higher simulation detail. Moving the pointer across the canvas injects a soft creature-sized blob into the field; `interactionRadius` controls its size in normalized canvas units. The `contrast` prop (default `1`, clamped to `0.25…8`) adjusts how much of the field is dithered to the light color. Set `dither={false}` to inspect the continuous field with bicubic reconstruction. `simulationSize` is clamped to `64…384`; lower values make each creature larger on screen, while higher values provide more room at proportionally higher GPU cost per frame. `pixelScale` independently controls the visible blue-noise dither-cell size.
 
 ## Local playground
 

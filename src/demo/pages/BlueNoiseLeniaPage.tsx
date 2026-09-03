@@ -8,14 +8,15 @@ import {
 import { BackLink } from "./BackLink";
 
 const pageSeed = crypto.getRandomValues(new Uint32Array(1))[0];
-const pagePreset = getLeniaScenePreset("orbium-unicaudatus-solo-up");
+const pagePreset = getLeniaScenePreset("tricircium-inversus-solo");
 const pageSpecies = getLeniaSpeciesPreset(pagePreset.species);
+const pagePosition = { x: 2 / 3, y: 0.5 } as const;
 
 export function BlueNoiseLeniaPage() {
   const [status, setStatus] = useState(
     isWebGpuSupported() ? `Seeding ${pageSpecies.name}…` : "WebGPU is unavailable.",
   );
-  const [contrast, setContrast] = useState(1);
+  const [contrast, setContrast] = useState(1.1);
 
   return (
     <main>
@@ -25,9 +26,9 @@ export function BlueNoiseLeniaPage() {
         <h1>Blue-noise Lenia</h1>
         <p className="intro">
           A Lenia continuous cellular automaton evolves on the GPU and is
-          dithered through a freshly seeded blue-noise tile. One enlarged{" "}
-          <i>{pageSpecies.name}</i> starts fully visible in the bottom-right
-          corner and travels vertically upward.
+          rendered through a freshly seeded blue-noise dither. A threefold{" "}
+          <i>{pageSpecies.name}</i> oscillator is vertically centered and
+          one-third in from the right.
         </p>
       </header>
 
@@ -53,8 +54,10 @@ export function BlueNoiseLeniaPage() {
           height={600}
           pixelScale={1}
           patternSize={64}
-          simulationSize={128}
+          simulationSize={192}
           preset={pagePreset.id}
+          position={pagePosition}
+          spatialScale={1.75}
           seed={pageSeed}
           contrast={contrast}
           dark="rgb(0,0,0)"

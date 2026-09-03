@@ -1,6 +1,7 @@
 import type {
   LeniaScenePlacement,
   LeniaScenePreset,
+  LeniaPosition,
   LeniaSpeciesPreset,
 } from "./leniaPresets";
 
@@ -51,6 +52,40 @@ function createRandom(seed: number): () => number {
   };
 }
 
+function normalizedCoordinate(value: number | undefined, fallback: number): number {
+  return Number.isFinite(value) ? Math.min(1, Math.max(0, value as number)) : fallback;
+}
+
+export function resolveLeniaSpatialScale(value: number): number {
+  return Number.isFinite(value) ? Math.min(3, Math.max(0.5, value)) : 1;
+}
+
+function scaleCells(cells: number[][], scale: number): number[][] {
+  if (scale === 1) return cells;
+  const sourceHeight = cells.length;
+  const sourceWidth = Math.max(...cells.map((row) => row.length));
+  const width = Math.max(1, Math.round(sourceWidth * scale));
+  const height = Math.max(1, Math.round(sourceHeight * scale));
+  const sample = (x: number, y: number) => cells[y]?.[x] ?? 0;
+
+  return Array.from({ length: height }, (_, targetY) =>
+    Array.from({ length: width }, (_, targetX) => {
+      const sourceX = ((targetX + 0.5) * sourceWidth) / width - 0.5;
+      const sourceY = ((targetY + 0.5) * sourceHeight) / height - 0.5;
+      const left = Math.floor(sourceX);
+      const top = Math.floor(sourceY);
+      const fractionX = sourceX - left;
+      const fractionY = sourceY - top;
+      return (
+        sample(left, top) * (1 - fractionX) * (1 - fractionY) +
+        sample(left + 1, top) * fractionX * (1 - fractionY) +
+        sample(left, top + 1) * (1 - fractionX) * fractionY +
+        sample(left + 1, top + 1) * fractionX * fractionY
+      );
+    }),
+  );
+}
+
 function rotateCells(cells: number[][], degrees: number): number[][] {
   const sourceHeight = cells.length;
   const sourceWidth = Math.max(...cells.map((row) => row.length));
@@ -91,9 +126,11 @@ export function createLeniaInitialState(
   preset: LeniaSpeciesPreset,
   seed: number,
   scene?: LeniaScenePreset,
+  position?: LeniaPosition,
+  spatialScale = 1,
 ): Float32Array {
   const state = new Float32Array(width * height);
-  const cells = decodeLeniaRle(preset.cells);
+  const cells = scaleCells(decodeLeniaRle(preset.cells), resolveLeniaSpatialScale(spatialScale));
   const random = createRandom(seed);
   const commonRotation = Math.floor(random() * 4) * 90;
   const defaultPlacements: readonly LeniaScenePlacement[] =
@@ -106,22 +143,33 @@ export function createLeniaInitialState(
       : [{ anchor: "normalized", x: 0.5, y: 0.5, rotation: commonRotation }];
   const placements = scene?.placements ?? defaultPlacements;
 
-  for (const placement of placements) {
+  for (const [placementIndex, placement] of placements.entries()) {
     const rotatedCells = rotateCells(cells, placement.rotation);
     const rotatedWidth = rotatedCells[0]?.length ?? 0;
     const rotatedHeight = rotatedCells.length;
     const jitter = scene ? 0 : 0.05;
-    const centerX = (placement.x ?? 0.5) + (random() - 0.5) * jitter;
-    const centerY = (placement.y ?? 0.5) + (random() - 0.5) * jitter;
+    const positionOverride = placementIndex === 0 ? position : undefined;
+    const centerX =
+      normalizedCoordinate(positionOverride?.x ?? placement.x, 0.5) + (random() - 0.5) * jitter;
+    const centerY =
+      normalizedCoordinate(positionOverride?.y ?? placement.y, 0.5) + (random() - 0.5) * jitter;
     const margin = placement.margin ?? 0;
-    const originX =
-      placement.anchor === "bottom-right"
+    const requestedOriginX =
+      placement.anchor === "bottom-right" && !positionOverride
         ? width - rotatedWidth - margin
         : Math.round(centerX * width - rotatedWidth / 2);
-    const originY =
-      placement.anchor === "bottom-right"
+    const requestedOriginY =
+      placement.anchor === "bottom-right" && !positionOverride
         ? height - rotatedHeight - margin
         : Math.round(centerY * height - rotatedHeight / 2);
+    const maxOriginX = Math.max(0, width - rotatedWidth);
+    const maxOriginY = Math.max(0, height - rotatedHeight);
+    const minimumX = Math.min(margin, maxOriginX);
+    const minimumY = Math.min(margin, maxOriginY);
+    const maximumX = Math.max(minimumX, maxOriginX - margin);
+    const maximumY = Math.max(minimumY, maxOriginY - margin);
+    const originX = Math.min(maximumX, Math.max(minimumX, requestedOriginX));
+    const originY = Math.min(maximumY, Math.max(minimumY, requestedOriginY));
 
     for (let sourceY = 0; sourceY < rotatedHeight; sourceY += 1) {
       const row = rotatedCells[sourceY];

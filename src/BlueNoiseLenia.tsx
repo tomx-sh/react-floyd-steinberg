@@ -11,11 +11,12 @@ import type {
   FloydSteinbergProps,
   FloydSteinbergRenderInfo,
 } from "./FloydSteinberg";
-import { createLeniaInitialState } from "./leniaSeed";
+import { createLeniaInitialState, resolveLeniaSpatialScale } from "./leniaSeed";
 import {
   DEFAULT_LENIA_SPECIES,
   getLeniaScenePreset,
   getLeniaSpeciesPreset,
+  type LeniaPosition,
   type LeniaScenePresetId,
   type LeniaSpeciesId,
 } from "./leniaPresets";
@@ -43,6 +44,12 @@ export interface BlueNoiseLeniaProps
   species?: LeniaSpeciesId;
   /** Optional scene preset that controls both species and initial placement. */
   preset?: LeniaScenePresetId;
+  /** Normalized center override for the first creature in a scene preset. */
+  position?: LeniaPosition;
+  /** Proportionally scale the seed and kernel for a higher-resolution creature. Defaults to 1. */
+  spatialScale?: number;
+  /** Apply the blue-noise threshold pass. Disable to inspect the continuous field. Defaults to true. */
+  dither?: boolean;
   /** Pointer injection radius in normalized canvas units. Defaults to 0.05. */
   interactionRadius?: number;
   /**
@@ -231,6 +238,9 @@ export function BlueNoiseLenia(
     simulationSize = 256,
     species = DEFAULT_LENIA_SPECIES,
     preset,
+    position,
+    spatialScale = 1,
+    dither = true,
     interactionRadius = 0.05,
     contrast = 1,
     invert = false,
@@ -263,10 +273,11 @@ export function BlueNoiseLenia(
   onErrorRef.current = onError;
   const sizeRef = useRef<RenderSize | undefined>(undefined);
   const propsRef = useRef<
-    Required<Pick<BlueNoiseLeniaProps, "pixelScale" | "patternSize" | "simulationSize" | "species" | "interactionRadius" | "contrast" | "invert" | "seed" | "powerPreference">> & {
+    Required<Pick<BlueNoiseLeniaProps, "pixelScale" | "patternSize" | "simulationSize" | "species" | "spatialScale" | "interactionRadius" | "contrast" | "invert" | "dither" | "seed" | "powerPreference">> & {
       darkDependency: string;
       lightDependency: string;
       preset: LeniaScenePresetId | undefined;
+      position: LeniaPosition | undefined;
       dark: FloydSteinbergColor;
       light: FloydSteinbergColor;
     }
@@ -276,6 +287,9 @@ export function BlueNoiseLenia(
     simulationSize,
     species,
     preset,
+    position,
+    spatialScale,
+    dither,
     interactionRadius,
     contrast,
     invert,
@@ -292,6 +306,9 @@ export function BlueNoiseLenia(
     simulationSize,
     species,
     preset,
+    position,
+    spatialScale,
+    dither,
     interactionRadius,
     contrast,
     invert,
@@ -417,6 +434,7 @@ export function BlueNoiseLenia(
       const props = propsRef.current;
       const scenePreset = props.preset ? getLeniaScenePreset(props.preset) : undefined;
       const speciesPreset = getLeniaSpeciesPreset(scenePreset?.species ?? props.species);
+      const resolvedSpatialScale = resolveLeniaSpatialScale(props.spatialScale);
       const resolvedSimulationSize = Math.round(clamp(props.simulationSize, 64, 384, 256));
       let resolvedPatternSize = Math.round(clamp(props.patternSize, 8, 128, 64));
       const initialSize = sizeRef.current ?? {
@@ -455,7 +473,7 @@ export function BlueNoiseLenia(
 
       const parameters = device.createBuffer({
         label: "Lenia parameters",
-        size: 112,
+        size: 128,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
       const patternBuffer = device.createBuffer({
@@ -469,6 +487,8 @@ export function BlueNoiseLenia(
         speciesPreset,
         props.seed,
         scenePreset,
+        props.position,
+        resolvedSpatialScale,
       );
       const initialStateBuffer = device.createBuffer({
         label: `${speciesPreset.name} initial state`,
@@ -500,7 +520,7 @@ export function BlueNoiseLenia(
       device.queue.writeBuffer(patternBuffer, 0, pattern);
       device.queue.writeBuffer(initialStateBuffer, 0, initialStateData);
 
-      const parameterData = new ArrayBuffer(112);
+      const parameterData = new ArrayBuffer(128);
       const parameterView = new DataView(parameterData);
       parameterView.setUint32(0, simulationWidth, true);
       parameterView.setUint32(4, simulationHeight, true);
@@ -509,8 +529,16 @@ export function BlueNoiseLenia(
       parameterView.setFloat32(32, 0, true);
       parameterView.setFloat32(36, speciesPreset.mu, true);
       parameterView.setFloat32(40, speciesPreset.sigma, true);
-      parameterView.setUint32(52, speciesPreset.radius, true);
+      parameterView.setUint32(52, Math.max(1, Math.round(speciesPreset.radius * resolvedSpatialScale)), true);
       parameterView.setUint32(72, resolvedPatternSize, true);
+      const kernelConfig =
+        Math.min(speciesPreset.kernelPeaks.length, 4) |
+        (speciesPreset.kernelCore === "quad4" ? 1 << 8 : 0) |
+        (speciesPreset.growthFunction === "quad4" ? 1 << 9 : 0);
+      parameterView.setUint32(76, kernelConfig | (props.dither ? 0 : 1 << 10), true);
+      speciesPreset.kernelPeaks.slice(0, 4).forEach((peak, index) => {
+        parameterView.setFloat32(112 + index * 4, peak, true);
+      });
       device.queue.writeBuffer(parameters, 0, parameterData);
 
       let stateAView = stateA.createView();
@@ -681,6 +709,7 @@ export function BlueNoiseLenia(
           parameterView.setUint32(72, resolvedPatternSize, true);
           parameterView.setFloat32(44, clamp(props.contrast, 0.25, 8, 1), true);
           parameterView.setUint32(48, props.invert ? 1 : 0, true);
+          parameterView.setUint32(76, kernelConfig | (props.dither ? 0 : 1 << 10), true);
           const colorKey = `${props.darkDependency}|${props.lightDependency}`;
           if (colorCache.key !== colorKey) {
             colorCache = { key: colorKey, dark: normalizedColor(props.dark), light: normalizedColor(props.light) };
@@ -748,7 +777,7 @@ export function BlueNoiseLenia(
       if (animationFrame) cancelAnimationFrame(animationFrame);
       destroyResources(resources);
     };
-  }, [simulationSize, species, preset, seed, powerPreference]);
+  }, [simulationSize, species, preset, position?.x, position?.y, spatialScale, seed, powerPreference]);
 
   return (
     <canvas

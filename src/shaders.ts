@@ -474,9 +474,10 @@ struct Parameters {
   logicalSize: vec2u,
   cellSize: vec2f,
   patternSize: u32,
-  paddingB: u32,
+  kernelConfig: u32,
   dark: vec4f,
   light: vec4f,
+  kernelPeaks: vec4f,
 }
 
 @group(0) @binding(0) var<uniform> parameters: Parameters;
@@ -485,13 +486,29 @@ struct Parameters {
 @group(0) @binding(3) var linearSampler: sampler;
 @group(0) @binding(4) var<storage, read> initialState: array<f32>;
 
-// Exponential kernel core (Chan 2019): a single soft ring peaking at r = 0.5.
+fn kernelPeak(index: u32) -> f32 {
+  if (index == 0u) { return parameters.kernelPeaks.x; }
+  if (index == 1u) { return parameters.kernelPeaks.y; }
+  if (index == 2u) { return parameters.kernelPeaks.z; }
+  return parameters.kernelPeaks.w;
+}
+
+// Catalog presets can combine up to four concentric bump4 or quad4 bands.
 fn kernelWeight(distance: f32) -> f32 {
   let r = distance / f32(parameters.kernelRadius);
   if (r <= 0.0 || r >= 1.0) {
     return 0.0;
   }
-  return exp(4.0 - 1.0 / (r * (1.0 - r)));
+  let peakCount = max(parameters.kernelConfig & 0xffu, 1u);
+  let bandPosition = r * f32(peakCount);
+  let bandIndex = min(u32(floor(bandPosition)), peakCount - 1u);
+  let bandR = fract(bandPosition);
+  let core = select(
+    exp(4.0 - 1.0 / (bandR * (1.0 - bandR))),
+    pow(4.0 * bandR * (1.0 - bandR), 4.0),
+    (parameters.kernelConfig & 0x100u) != 0u,
+  );
+  return kernelPeak(bandIndex) * core;
 }
 
 @compute @workgroup_size(8, 8)
@@ -537,7 +554,14 @@ fn advance(@builtin(global_invocation_id) id: vec3u) {
   potential /= normalization;
 
   let deviation = potential - parameters.mu;
-  let growth = 2.0 * exp(-deviation * deviation / (2.0 * parameters.sigma * parameters.sigma)) - 1.0;
+  let gaussianGrowth = exp(-deviation * deviation / (2.0 * parameters.sigma * parameters.sigma));
+  let polynomialBase = max(0.0, 1.0 - deviation * deviation / (9.0 * parameters.sigma * parameters.sigma));
+  let polynomialGrowth = pow(polynomialBase, 4.0);
+  let growth = 2.0 * select(
+    gaussianGrowth,
+    polynomialGrowth,
+    (parameters.kernelConfig & 0x200u) != 0u,
+  ) - 1.0;
   var state = textureLoad(previousState, cell, 0).x + parameters.deltaTime * growth;
 
   // Pointer interaction injects a soft creature-sized blob.
@@ -570,9 +594,10 @@ struct Parameters {
   logicalSize: vec2u,
   cellSize: vec2f,
   patternSize: u32,
-  paddingB: u32,
+  kernelConfig: u32,
   dark: vec4f,
   light: vec4f,
+  kernelPeaks: vec4f,
 }
 
 @group(0) @binding(0) var<uniform> parameters: Parameters;
@@ -588,18 +613,59 @@ fn vertexMain(@builtin(vertex_index) index: u32) -> @builtin(position) vec4f {
   return vec4f(x * 2.0 - 1.0, 1.0 - y * 2.0, 0.0, 1.0);
 }
 
+fn mitchellWeight(distance: f32) -> f32 {
+  let x = abs(distance);
+  if (x <= 1.0) {
+    return (7.0 * x * x * x - 12.0 * x * x + 16.0 / 3.0) / 6.0;
+  }
+  if (x < 2.0) {
+    return ((-7.0 / 3.0 * x + 12.0) * x * x - 20.0 * x + 32.0 / 3.0) / 6.0;
+  }
+  return 0.0;
+}
+
+fn sampleBicubic(stateTexture: texture_2d<f32>, uv: vec2f) -> f32 {
+  let textureSize = vec2i(textureDimensions(stateTexture));
+  let position = uv * vec2f(textureSize) - vec2f(0.5);
+  let base = vec2i(floor(position));
+  let fraction = fract(position);
+  var value = 0.0;
+  var totalWeight = 0.0;
+
+  for (var y = -1; y <= 2; y += 1) {
+    let weightY = mitchellWeight(f32(y) - fraction.y);
+    for (var x = -1; x <= 2; x += 1) {
+      let weight = mitchellWeight(f32(x) - fraction.x) * weightY;
+      let cell = clamp(base + vec2i(x, y), vec2i(0), textureSize - vec2i(1));
+      value += textureLoad(stateTexture, cell, 0).x * weight;
+      totalWeight += weight;
+    }
+  }
+  return clamp(value / max(totalWeight, 0.0001), 0.0, 1.0);
+}
+
 @fragment
 fn fragmentMain(@builtin(position) position: vec4f) -> @location(0) vec4f {
   let safeLogicalSize = max(parameters.logicalSize, vec2u(1u));
   let safeCellSize = max(parameters.cellSize, vec2f(0.0001));
   let cell = min(vec2u(position.xy / safeCellSize), safeLogicalSize - vec2u(1u));
   let uv = (vec2f(cell) + vec2f(0.5)) / vec2f(safeLogicalSize);
-  let currentState = textureSampleLevel(leniaState, linearSampler, uv, 0.0).x;
-  let previousState = textureSampleLevel(previousLeniaState, linearSampler, uv, 0.0).x;
+  let ditherDisabled = (parameters.kernelConfig & 0x400u) != 0u;
+  var currentState = textureSampleLevel(leniaState, linearSampler, uv, 0.0).x;
+  var previousState = textureSampleLevel(previousLeniaState, linearSampler, uv, 0.0).x;
+  if (ditherDisabled) {
+    currentState = sampleBicubic(leniaState, uv);
+    previousState = sampleBicubic(previousLeniaState, uv);
+  }
   let state = mix(previousState, currentState, clamp(parameters.time, 0.0, 1.0));
-  var luminance = smoothstep(0.04, 0.5, state);
+  // Preserve faint densities in source-debug mode; the dithered presentation
+  // keeps its tighter curve so the blue-noise pattern remains well defined.
+  var luminance = select(smoothstep(0.04, 0.5, state), pow(clamp(state, 0.0, 1.0), 0.8), ditherDisabled);
   luminance = clamp((luminance - 0.5) * parameters.contrast + 0.5, 0.0, 1.0);
   let source = select(luminance, 1.0 - luminance, parameters.invert != 0u);
+  if (ditherDisabled) {
+    return mix(parameters.dark, parameters.light, source);
+  }
   let patternCell = cell % vec2u(parameters.patternSize);
   let rank = noiseRanks[patternCell.y * parameters.patternSize + patternCell.x];
   let threshold = (f32(rank) + 0.5) / f32(parameters.patternSize * parameters.patternSize);
