@@ -131,6 +131,8 @@ The `quantity` prop chooses the field used for output luminance and pointer inte
 
 The `contrast` prop (default `1`, clamped to `0.25…8`) applies a contrast post process to the selected field before dithering: values above `1` push luminance away from its midpoint and grow the colored areas, while values below `1` shrink them.
 
+The `viscosity` prop (default `1`, clamped to `0…20`) controls velocity diffusion. Increasing it suppresses small eddies and thin turbulent structures, producing broader, smoother plumes. It changes the simulation itself, unlike `contrast`, which only changes the final thresholded appearance.
+
 ```tsx
 import { BlueNoiseFluid } from "react-floyd-steinberg";
 
@@ -142,6 +144,7 @@ export function DitheredFluid() {
       pixelScale={2}
       patternSize={64}
       simulationSize={192}
+      viscosity={4}
       quantity="temperature"
       dark="oklch(18% 0.03 255)"
       light="oklch(94% 0.04 90)"

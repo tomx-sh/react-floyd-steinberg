@@ -8,6 +8,11 @@ export interface BlueNoiseFluidProps extends Omit<FloydSteinbergProps, "alphaBac
     /** Pointer injection radius in normalized canvas units. Defaults to 0.05. */
     interactionRadius?: number;
     /**
+     * Velocity diffusion coefficient. Higher values suppress small eddies and
+     * produce broader, smoother fluid structures. Defaults to 1; clamped to 0–20.
+     */
+    viscosity?: number;
+    /**
      * Fluid quantity used for brightness and pointer interaction. Velocity mode
      * stirs the flow; temperature mode injects heat. Defaults to "velocity".
      */
@@ -19,4 +24,4 @@ export interface BlueNoiseFluidProps extends Omit<FloydSteinbergProps, "alphaBac
      */
     contrast?: number;
 }
-export declare function BlueNoiseFluid({ width, height, pixelScale, patternSize, simulationSize, interactionRadius, quantity, contrast, invert, seed, dark, light, powerPreference, onReady, onError, ref, style, "aria-label": ariaLabel, ...canvasProps }: BlueNoiseFluidProps): import("react").JSX.Element;
+export declare function BlueNoiseFluid({ width, height, pixelScale, patternSize, simulationSize, interactionRadius, viscosity, quantity, contrast, invert, seed, dark, light, powerPreference, onReady, onError, ref, style, "aria-label": ariaLabel, ...canvasProps }: BlueNoiseFluidProps): import("react").JSX.Element;

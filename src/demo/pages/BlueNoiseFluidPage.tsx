@@ -7,6 +7,7 @@ export function BlueNoiseFluidPage() {
     isWebGpuSupported() ? "Starting fluid simulation…" : "WebGPU is unavailable.",
   );
   const [contrast, setContrast] = useState(1);
+  const [viscosity, setViscosity] = useState(4);
   const [quantity, setQuantity] = useState<BlueNoiseFluidQuantity>("velocity");
 
   return (
@@ -36,6 +37,19 @@ export function BlueNoiseFluidPage() {
         </label>
         <label>
           <span>
+            Viscosity <output>{viscosity.toFixed(1)}</output>
+          </span>
+          <input
+            type="range"
+            min="0"
+            max="20"
+            step="0.5"
+            value={viscosity}
+            onChange={(event) => setViscosity(event.currentTarget.valueAsNumber)}
+          />
+        </label>
+        <label>
+          <span>
             Contrast <output>{contrast.toFixed(2)}</output>
           </span>
           <input
@@ -57,6 +71,7 @@ export function BlueNoiseFluidPage() {
           patternSize={64}
           simulationSize={192}
           quantity={quantity}
+          viscosity={viscosity}
           contrast={contrast}
           dark="rgb(0,0,0)"
           light="rgb(255,255,255)"

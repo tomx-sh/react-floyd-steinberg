@@ -210,6 +210,7 @@ struct Parameters {
   interactionRadius: f32,
   time: f32,
   quantity: u32,
+  viscosity: f32,
 }
 
 @group(0) @binding(0) var<uniform> parameters: Parameters;
@@ -303,7 +304,13 @@ fn advect(@builtin(global_invocation_id) id: vec3u) {
   let right = textureLoad(previousState, vec2i(cell) + vec2i(1, 0), 0);
   let up = textureLoad(previousState, vec2i(cell) + vec2i(0, -1), 0);
   let down = textureLoad(previousState, vec2i(cell) + vec2i(0, 1), 0);
+  let neighborVelocity = (left.xy + right.xy + up.xy + down.xy) * 0.25;
   let neighborTemperature = (left.w + right.w + up.w + down.w) * 0.25;
+  // Viscosity diffuses velocity gradients, removing small eddies while
+  // preserving the large-scale convection. Exponential decay keeps this
+  // stable across varying frame times.
+  let viscousMix = 1.0 - exp(-parameters.viscosity * parameters.deltaTime);
+  velocity = mix(velocity, neighborVelocity, viscousMix);
   var temperature = mix(advected.w, neighborTemperature, min(parameters.deltaTime * 0.9, 0.08));
   temperature *= exp(-parameters.deltaTime * 0.035);
 

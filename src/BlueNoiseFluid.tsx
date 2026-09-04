@@ -35,6 +35,11 @@ export interface BlueNoiseFluidProps
   /** Pointer injection radius in normalized canvas units. Defaults to 0.05. */
   interactionRadius?: number;
   /**
+   * Velocity diffusion coefficient. Higher values suppress small eddies and
+   * produce broader, smoother fluid structures. Defaults to 1; clamped to 0–20.
+   */
+  viscosity?: number;
+  /**
    * Fluid quantity used for brightness and pointer interaction. Velocity mode
    * stirs the flow; temperature mode injects heat. Defaults to "velocity".
    */
@@ -253,6 +258,7 @@ export function BlueNoiseFluid(
     patternSize = 64,
     simulationSize = 192,
     interactionRadius = 0.05,
+    viscosity = 1,
     quantity = "temperature",
     contrast = 1,
     invert = false,
@@ -286,7 +292,7 @@ export function BlueNoiseFluid(
   onReadyRef.current = onReady;
   onErrorRef.current = onError;
   const sizeRef = useRef<RenderSize | undefined>(undefined);
-  const propsRef = useRef<Required<Pick<BlueNoiseFluidProps, "pixelScale" | "patternSize" | "simulationSize" | "interactionRadius" | "quantity" | "contrast" | "invert" | "seed" | "powerPreference">> & {
+  const propsRef = useRef<Required<Pick<BlueNoiseFluidProps, "pixelScale" | "patternSize" | "simulationSize" | "interactionRadius" | "viscosity" | "quantity" | "contrast" | "invert" | "seed" | "powerPreference">> & {
     darkDependency: string;
     lightDependency: string;
     dark: FloydSteinbergColor;
@@ -296,6 +302,7 @@ export function BlueNoiseFluid(
     patternSize,
     simulationSize,
     interactionRadius,
+    viscosity,
     quantity,
     contrast,
     invert,
@@ -311,6 +318,7 @@ export function BlueNoiseFluid(
     patternSize,
     simulationSize,
     interactionRadius,
+    viscosity,
     quantity,
     contrast,
     invert,
@@ -500,7 +508,7 @@ export function BlueNoiseFluid(
 
       const simulationParameters = device.createBuffer({
         label: "Fluid simulation parameters",
-        size: 48,
+        size: 56,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
       const displayParameters = device.createBuffer({
@@ -543,13 +551,14 @@ export function BlueNoiseFluid(
       };
       device.queue.writeBuffer(patternBuffer, 0, pattern);
 
-      const simulationData = new ArrayBuffer(48);
+      const simulationData = new ArrayBuffer(56);
       const simulationView = new DataView(simulationData);
       simulationView.setUint32(0, simulationWidth, true);
       simulationView.setUint32(4, simulationHeight, true);
       simulationView.setUint32(12, props.seed >>> 0, true);
       simulationView.setFloat32(36, clamp(props.interactionRadius, 0.01, 0.3, 0.05), true);
       simulationView.setUint32(44, props.quantity === "temperature" ? 1 : 0, true);
+      simulationView.setFloat32(48, clamp(props.viscosity, 0, 20, 1), true);
       device.queue.writeBuffer(simulationParameters, 0, simulationData);
 
       const displayData = new ArrayBuffer(64);
@@ -787,6 +796,7 @@ export function BlueNoiseFluid(
           simulationView.setFloat32(36, clamp(props.interactionRadius, 0.01, 0.3, 0.05), true);
           simulationView.setFloat32(40, (timestamp - startTime) / 1000, true);
           simulationView.setUint32(44, props.quantity === "temperature" ? 1 : 0, true);
+          simulationView.setFloat32(48, clamp(props.viscosity, 0, 20, 1), true);
           device.queue.writeBuffer(simulationParameters, 0, simulationData);
           pointer.velocityX *= 0.72;
           pointer.velocityY *= 0.72;
