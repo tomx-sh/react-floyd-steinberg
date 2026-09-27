@@ -7,18 +7,18 @@ The source can be an image URL, `File`/`Blob`, `ImageBitmap`, image element, or 
 ## Install
 
 ```sh
-npm install github:<github-user>/react-floyd-steinberg#v0.5.0
-pnpm add github:<github-user>/react-floyd-steinberg#v0.5.0
-bun add github:<github-user>/react-floyd-steinberg#v0.5.0
+npm install github:<github-user>/react-floyd-steinberg#v0.6.0
+pnpm add github:<github-user>/react-floyd-steinberg#v0.6.0
+bun add github:<github-user>/react-floyd-steinberg#v0.6.0
 ```
 
 Replace `<github-user>` with the repository owner's GitHub username. The equivalent full Git URL works with all three package managers:
 
 ```sh
-npm install git+https://github.com/<github-user>/react-floyd-steinberg.git#v0.5.0
+npm install git+https://github.com/<github-user>/react-floyd-steinberg.git#v0.6.0
 ```
 
-A tag such as `#v0.5.0` is recommended so application installs remain reproducible. You can instead select:
+A tag such as `#v0.6.0` is recommended so application installs remain reproducible. You can instead select:
 
 - `#main` for the latest commit on the main branch.
 - `#<commit-sha>` for one exact commit.
@@ -29,7 +29,7 @@ The dependency will be stored in the consuming application's `package.json`, for
 ```json
 {
   "dependencies": {
-    "react-floyd-steinberg": "github:<github-user>/react-floyd-steinberg#v0.5.0"
+    "react-floyd-steinberg": "github:<github-user>/react-floyd-steinberg#v0.6.0"
   }
 }
 ```
@@ -155,6 +155,28 @@ export function DitheredFluid() {
 ```
 
 `simulationSize` controls the longest fluid-grid dimension independently from the canvas backing resolution and is clamped to `32…384`. `interactionRadius` controls the pointer influence in normalized canvas units. The defaults favor a subtle, responsive, and inexpensive simulation.
+
+## Paint in a box experiment
+
+`BlueNoisePaint` uses the same canvas lifecycle, pressure projection, and blue-noise dithering as `BlueNoiseFluid`, with a different simulation setup. It starts with zero pigment and velocity on mount or reset; automatic stirring and pigment sources ease in over the first two seconds, building the scene gradually. Slowly wandering, opposing vortices stir pigment without heating, buoyancy, or an upward bias. The canvas edges are solid simulation walls: pigment can reach them, while the velocity and pressure boundaries prevent flow through them. Pigment is slowly replenished in the interior to keep the scene active.
+
+```tsx
+import { BlueNoisePaint } from "react-floyd-steinberg";
+
+<BlueNoisePaint
+  width={900}
+  height={600}
+  pixelScale={1}
+  viscosity={2}
+  contrast={1.4}
+  swirlStrength={1}
+  light="rgb(255,255,255)"
+  dark="rgb(0,0,0)"
+  style={{ width: "100%", height: "auto" }}
+/>
+```
+
+It accepts the same props as `BlueNoiseFluid`, except `quantity` is `"pigment"` (default) or `"velocity"`. Moving the pointer stirs both modes and adds paint in pigment mode. `swirlStrength` controls the automatic stirring (`0…3`, default `1`). Viscosity defaults to `2`. Open `#/blue-noise-paint` in the playground to adjust these controls or reset the paint.
 
 ## Continuous cellular automaton example
 

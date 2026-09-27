@@ -55,4 +55,4 @@ export interface FloydSteinbergProps extends Omit<CanvasHTMLAttributes<HTMLCanva
     ref?: Ref<HTMLCanvasElement>;
 }
 export declare function isWebGpuSupported(): boolean;
-export declare function FloydSteinberg({ src, width, height, pixelScale, randomness, threshold, fit, invert, seed, alphaBackground, dark, light, crossOrigin, powerPreference, onReady, onError, ref, "aria-label": ariaLabel, ...canvasProps }: FloydSteinbergProps): import("react").JSX.Element;
+export declare function FloydSteinberg({ src, width, height, pixelScale, randomness, threshold, fit, invert, seed, alphaBackground, dark, light, crossOrigin, powerPreference, onReady, onError, ref, "aria-label": ariaLabel, ...canvasProps }: FloydSteinbergProps): import('react').JSX.Element;

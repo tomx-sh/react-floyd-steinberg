@@ -19,6 +19,8 @@ export default defineConfig(({ mode }) => {
           "src/FloydSteinberg.tsx",
           "src/BlueNoiseWave.tsx",
           "src/BlueNoiseFluid.tsx",
+          "src/BlueNoisePaint.tsx",
+          "src/paintShaders.ts",
           "src/BlueNoiseLenia.tsx",
           "src/leniaPresets.ts",
           "src/shaders.ts",

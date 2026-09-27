@@ -21,6 +21,13 @@ const examples = [
       "A hot lower wall and cold upper wall drive convection plumes, dithered through the same fixed blue-noise tile.",
   },
   {
+    href: "#/blue-noise-paint",
+    eyebrow: "Fluid experiment",
+    title: "Paint in a box",
+    description:
+      "Wandering eddies swirl paint inside solid canvas walls, with the same blue-noise texture.",
+  },
+  {
     href: "#/blue-noise-lenia",
     eyebrow: "Continuous cellular automaton",
     title: "Blue-noise Lenia",

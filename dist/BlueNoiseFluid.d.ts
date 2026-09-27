@@ -24,4 +24,12 @@ export interface BlueNoiseFluidProps extends Omit<FloydSteinbergProps, "alphaBac
      */
     contrast?: number;
 }
-export declare function BlueNoiseFluid({ width, height, pixelScale, patternSize, simulationSize, interactionRadius, viscosity, quantity, contrast, invert, seed, dark, light, powerPreference, onReady, onError, ref, style, "aria-label": ariaLabel, ...canvasProps }: BlueNoiseFluidProps): import("react").JSX.Element;
+type FluidSetup = "convection" | "paint";
+interface FluidCanvasProps extends BlueNoiseFluidProps {
+    setup: FluidSetup;
+    swirlStrength?: number;
+}
+export declare function BlueNoiseFluid(props: BlueNoiseFluidProps): import('react').JSX.Element;
+/** Shared canvas lifecycle and GPU passes for the two fluid setups. */
+export declare function FluidCanvas({ setup, swirlStrength, width, height, pixelScale, patternSize, simulationSize, interactionRadius, viscosity, quantity, contrast, invert, seed, dark, light, powerPreference, onReady, onError, ref, style, "aria-label": ariaLabel, ...canvasProps }: FluidCanvasProps): import('react').JSX.Element;
+export {};

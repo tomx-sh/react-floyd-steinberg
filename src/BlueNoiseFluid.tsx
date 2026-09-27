@@ -12,6 +12,7 @@ import type {
   FloydSteinbergRenderInfo,
 } from "./FloydSteinberg";
 import { blueNoiseFluidShader, fluidSimulationShader } from "./shaders";
+import { blueNoisePaintShader, paintSimulationShader } from "./paintShaders";
 import { createCheckedModule, getSharedDevice } from "./webgpu";
 
 const FRAME_INTERVAL = 1000 / 60;
@@ -93,21 +94,29 @@ interface PointerState {
   lastMoveTime: number;
 }
 
-const pipelineCache = new WeakMap<GPUDevice, Map<GPUTextureFormat, Promise<Pipelines>>>();
+type FluidSetup = "convection" | "paint";
 
-function getPipelines(device: GPUDevice, format: GPUTextureFormat): Promise<Pipelines> {
+interface FluidCanvasProps extends BlueNoiseFluidProps {
+  setup: FluidSetup;
+  swirlStrength?: number;
+}
+
+const pipelineCache = new WeakMap<GPUDevice, Map<string, Promise<Pipelines>>>();
+
+function getPipelines(device: GPUDevice, format: GPUTextureFormat, setup: FluidSetup): Promise<Pipelines> {
   let formats = pipelineCache.get(device);
   if (!formats) {
     formats = new Map();
     pipelineCache.set(device, formats);
   }
 
-  let pending = formats.get(format);
+  const key = `${format}:${setup}`;
+  let pending = formats.get(key);
   if (!pending) {
     pending = (async () => {
       const [simulationModule, displayModule] = await Promise.all([
-        createCheckedModule(device, "Fluid simulation WGSL", fluidSimulationShader),
-        createCheckedModule(device, "Blue-noise fluid WGSL", blueNoiseFluidShader),
+        createCheckedModule(device, "Fluid simulation WGSL", setup === "paint" ? paintSimulationShader : fluidSimulationShader),
+        createCheckedModule(device, "Blue-noise fluid WGSL", setup === "paint" ? blueNoisePaintShader : blueNoiseFluidShader),
       ]);
       const computeLayout = device.createBindGroupLayout({
         label: "Fluid simulation bindings",
@@ -170,7 +179,7 @@ function getPipelines(device: GPUDevice, format: GPUTextureFormat): Promise<Pipe
         }),
       };
     })();
-    formats.set(format, pending);
+    formats.set(key, pending);
   }
   return pending;
 }
@@ -250,8 +259,15 @@ function destroyResources(resources: RenderResources | undefined) {
   resources?.pressureB.destroy();
 }
 
-export function BlueNoiseFluid(
+export function BlueNoiseFluid(props: BlueNoiseFluidProps) {
+  return <FluidCanvas {...props} setup="convection" />;
+}
+
+/** Shared canvas lifecycle and GPU passes for the two fluid setups. */
+export function FluidCanvas(
   {
+    setup,
+    swirlStrength = 1,
     width,
     height,
     pixelScale = 2,
@@ -272,7 +288,7 @@ export function BlueNoiseFluid(
     style,
     "aria-label": ariaLabel = "Interactive blue-noise fluid simulation",
     ...canvasProps
-  }: BlueNoiseFluidProps) {
+  }: FluidCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pointerRef = useRef<PointerState>({
     x: 0.5,
@@ -293,11 +309,13 @@ export function BlueNoiseFluid(
   onErrorRef.current = onError;
   const sizeRef = useRef<RenderSize | undefined>(undefined);
   const propsRef = useRef<Required<Pick<BlueNoiseFluidProps, "pixelScale" | "patternSize" | "simulationSize" | "interactionRadius" | "viscosity" | "quantity" | "contrast" | "invert" | "seed" | "powerPreference">> & {
+    swirlStrength: number;
     darkDependency: string;
     lightDependency: string;
     dark: FloydSteinbergColor;
     light: FloydSteinbergColor;
   }>({
+    swirlStrength,
     pixelScale,
     patternSize,
     simulationSize,
@@ -314,6 +332,7 @@ export function BlueNoiseFluid(
     light,
   });
   propsRef.current = {
+    swirlStrength,
     pixelScale,
     patternSize,
     simulationSize,
@@ -469,7 +488,7 @@ export function BlueNoiseFluid(
       onErrorRef.current?.(reason instanceof Error ? reason : new Error(String(reason)));
     };
 
-    const setup = async () => {
+    const setupGpu = async () => {
       const props = propsRef.current;
       const resolvedSimulationSize = Math.round(clamp(props.simulationSize, 32, 384, 192));
       let resolvedPatternSize = Math.round(clamp(props.patternSize, 8, 128, 64));
@@ -503,7 +522,7 @@ export function BlueNoiseFluid(
       if (!context) throw new Error("The canvas could not create a WebGPU context.");
       const format = navigator.gpu.getPreferredCanvasFormat();
       context.configure({ device, format, alphaMode: "premultiplied" });
-      const pipelines = await getPipelines(device, format);
+      const pipelines = await getPipelines(device, format, setup);
       if (cancelled) return;
 
       const simulationParameters = device.createBuffer({
@@ -559,6 +578,7 @@ export function BlueNoiseFluid(
       simulationView.setFloat32(36, clamp(props.interactionRadius, 0.01, 0.3, 0.05), true);
       simulationView.setUint32(44, props.quantity === "temperature" ? 1 : 0, true);
       simulationView.setFloat32(48, clamp(props.viscosity, 0, 20, 1), true);
+      simulationView.setFloat32(52, clamp(props.swirlStrength, 0, 3, 1), true);
       device.queue.writeBuffer(simulationParameters, 0, simulationData);
 
       const displayData = new ArrayBuffer(64);
@@ -797,6 +817,7 @@ export function BlueNoiseFluid(
           simulationView.setFloat32(40, (timestamp - startTime) / 1000, true);
           simulationView.setUint32(44, props.quantity === "temperature" ? 1 : 0, true);
           simulationView.setFloat32(48, clamp(props.viscosity, 0, 20, 1), true);
+          simulationView.setFloat32(52, clamp(props.swirlStrength, 0, 3, 1), true);
           device.queue.writeBuffer(simulationParameters, 0, simulationData);
           pointer.velocityX *= 0.72;
           pointer.velocityY *= 0.72;
@@ -836,7 +857,7 @@ export function BlueNoiseFluid(
             pass.end();
           };
 
-          dispatchCompute("Advect and heat fluid", pipelines.advect, advectBindGroup);
+          dispatchCompute("Advect fluid", pipelines.advect, advectBindGroup);
           dispatchCompute("Measure fluid divergence", pipelines.divergence, divergenceBindGroup);
           for (let iteration = 0; iteration < PRESSURE_ITERATIONS; iteration += 1) {
             dispatchCompute(
@@ -888,14 +909,14 @@ export function BlueNoiseFluid(
       drawFrame(performance.now());
     };
 
-    setup().catch(fail);
+    setupGpu().catch(fail);
 
     return () => {
       cancelled = true;
       if (animationFrame) cancelAnimationFrame(animationFrame);
       destroyResources(resources);
     };
-  }, [simulationSize, seed, powerPreference]);
+  }, [simulationSize, seed, powerPreference, setup]);
 
   return (
     <canvas

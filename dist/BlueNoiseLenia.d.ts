@@ -24,4 +24,4 @@ export interface BlueNoiseLeniaProps extends Omit<FloydSteinbergProps, "alphaBac
      */
     contrast?: number;
 }
-export declare function BlueNoiseLenia({ width, height, pixelScale, patternSize, simulationSize, species, preset, position, spatialScale, dither, interactionRadius, contrast, invert, seed, dark, light, powerPreference, onReady, onError, ref, style, "aria-label": ariaLabel, ...canvasProps }: BlueNoiseLeniaProps): import("react").JSX.Element;
+export declare function BlueNoiseLenia({ width, height, pixelScale, patternSize, simulationSize, species, preset, position, spatialScale, dither, interactionRadius, contrast, invert, seed, dark, light, powerPreference, onReady, onError, ref, style, "aria-label": ariaLabel, ...canvasProps }: BlueNoiseLeniaProps): import('react').JSX.Element;

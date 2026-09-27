@@ -3,4 +3,4 @@ export interface BlueNoiseWaveProps extends Omit<FloydSteinbergProps, "alphaBack
     /** Width and height of the square, tileable threshold pattern in dither cells. Defaults to 64; clamped to 8–128. */
     patternSize?: number;
 }
-export declare function BlueNoiseWave({ width, height, pixelScale, patternSize, invert, seed, dark, light, powerPreference, onReady, onError, ref, "aria-label": ariaLabel, ...canvasProps }: BlueNoiseWaveProps): import("react").JSX.Element;
+export declare function BlueNoiseWave({ width, height, pixelScale, patternSize, invert, seed, dark, light, powerPreference, onReady, onError, ref, "aria-label": ariaLabel, ...canvasProps }: BlueNoiseWaveProps): import('react').JSX.Element;

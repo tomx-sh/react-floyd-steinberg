@@ -1,6 +1,7 @@
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { BlueNoiseFluidPage } from "./pages/BlueNoiseFluidPage";
+import { BlueNoisePaintPage } from "./pages/BlueNoisePaintPage";
 import { BlueNoiseLeniaPage } from "./pages/BlueNoiseLeniaPage";
 import { BlueNoiseWavePage } from "./pages/BlueNoiseWavePage";
 import { FloydSteinbergPage } from "./pages/FloydSteinbergPage";
@@ -12,6 +13,7 @@ const routes: Record<string, () => React.JSX.Element> = {
   "/floyd-steinberg": FloydSteinbergPage,
   "/blue-noise-wave": BlueNoiseWavePage,
   "/blue-noise-fluid": BlueNoiseFluidPage,
+  "/blue-noise-paint": BlueNoisePaintPage,
   "/blue-noise-lenia": BlueNoiseLeniaPage,
 };
 

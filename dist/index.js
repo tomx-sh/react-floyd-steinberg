@@ -218,14 +218,14 @@ function P(e, t, n, r, i, a, o, s) {
 	u.set(A(o), 0), u.set(A(s), 4), e.queue.writeBuffer(t, 0, c);
 }
 function F({ src: n, width: o, height: s, pixelScale: c = 1, randomness: l = .35, threshold: u = .5, fit: d = "contain", invert: f = !1, seed: p = 1592594996, alphaBackground: m = 1, dark: g = v, light: b = y, crossOrigin: x = "anonymous", powerPreference: S = "high-performance", onReady: w, onError: k, ref: A, "aria-label": F = "Floyd–Steinberg dithered image", ...I }) {
-	let L = r(null), R = r(w), z = r(k), [B, V] = i(), [H, U] = i(), W = j(g), G = j(b);
+	let L = r(null), R = r(w), z = r(k), [B, V] = i(), [H, U] = i(), ee = j(g), W = j(b);
 	R.current = w, z.current = k;
-	let [ee, K] = i("loading"), q = e((e) => {
+	let [te, G] = i("loading"), K = e((e) => {
 		L.current = e, typeof A == "function" ? A(e) : A && (A.current = e);
 	}, [A]);
 	t(() => {
 		let e = !1;
-		return K("loading"), V(void 0), U(void 0), T(n, x).then((t) => {
+		return G("loading"), V(void 0), U(void 0), T(n, x).then((t) => {
 			if (e) {
 				t.dispose?.();
 				return;
@@ -235,12 +235,12 @@ function F({ src: n, width: o, height: s, pixelScale: c = 1, randomness: l = .35
 		}).catch((t) => {
 			if (e) return;
 			let n = t instanceof Error ? t : Error(String(t));
-			K("error"), z.current?.(n);
+			G("error"), z.current?.(n);
 		}), () => {
 			e = !0;
 		};
 	}, [n, x]);
-	let J = B ? O(B.width, B.height, o, s) : {
+	let q = B ? O(B.width, B.height, o, s) : {
 		width: D(o, 300),
 		height: D(s, 150)
 	};
@@ -272,13 +272,13 @@ function F({ src: n, width: o, height: s, pixelScale: c = 1, randomness: l = .35
 		};
 	}, [
 		B,
-		J.width,
-		J.height
+		q.width,
+		q.height
 	]), t(() => {
 		let e = L.current;
 		if (!e || !B || !H) return;
 		let t = !1, n;
-		return K("loading"), (async () => {
+		return G("loading"), (async () => {
 			let r = D(c, 1), i = Math.ceil(H.cssWidth / r), a = Math.ceil(H.cssHeight / r), o = r * H.width / H.cssWidth, s = r * H.height / H.cssHeight, v = await h(S);
 			if (t) return;
 			let y = v.limits.maxTextureDimension2D;
@@ -345,7 +345,7 @@ function F({ src: n, width: o, height: s, pixelScale: c = 1, randomness: l = .35
 				seed: p,
 				alphaBackground: E(m, 0, 1, 1)
 			}), P(v, M, i, a, o, s, g, b);
-			let W = v.createBindGroup({
+			let ee = v.createBindGroup({
 				label: "Floyd–Steinberg compute bind group",
 				layout: O.computeLayout,
 				entries: [
@@ -373,7 +373,7 @@ function F({ src: n, width: o, height: s, pixelScale: c = 1, randomness: l = .35
 						resource: U.createView()
 					}
 				]
-			}), G = v.createBindGroup({
+			}), W = v.createBindGroup({
 				label: "Floyd–Steinberg display bind group",
 				layout: O.display.getBindGroupLayout(0),
 				entries: [{
@@ -383,13 +383,13 @@ function F({ src: n, width: o, height: s, pixelScale: c = 1, randomness: l = .35
 					binding: 1,
 					resource: { buffer: k }
 				}]
-			}), ee = v.createCommandEncoder({ label: "Floyd–Steinberg render" });
-			ee.clearBuffer(A);
+			}), te = v.createCommandEncoder({ label: "Floyd–Steinberg render" });
+			te.clearBuffer(A);
 			for (let e = 0; e < F; e += 1) {
-				let t = ee.beginComputePass({ label: `Floyd–Steinberg band ${e}` });
-				t.setPipeline(O.compute), t.setBindGroup(0, W, [e * I]), t.dispatchWorkgroups(1), t.end();
+				let t = te.beginComputePass({ label: `Floyd–Steinberg band ${e}` });
+				t.setPipeline(O.compute), t.setBindGroup(0, ee, [e * I]), t.dispatchWorkgroups(1), t.end();
 			}
-			let q = ee.beginRenderPass({
+			let K = te.beginRenderPass({
 				label: "Floyd–Steinberg display pass",
 				colorAttachments: [{
 					view: w.getCurrentTexture().createView(),
@@ -403,7 +403,7 @@ function F({ src: n, width: o, height: s, pixelScale: c = 1, randomness: l = .35
 					storeOp: "store"
 				}]
 			});
-			q.setPipeline(O.display), q.setBindGroup(0, G), q.draw(3), q.end(), v.queue.submit([ee.finish()]), await v.queue.onSubmittedWorkDone(), !t && (K("ready"), R.current?.({
+			K.setPipeline(O.display), K.setBindGroup(0, W), K.draw(3), K.end(), v.queue.submit([te.finish()]), await v.queue.onSubmittedWorkDone(), !t && (G("ready"), R.current?.({
 				canvas: e,
 				device: v,
 				...H,
@@ -413,7 +413,7 @@ function F({ src: n, width: o, height: s, pixelScale: c = 1, randomness: l = .35
 		})().catch((e) => {
 			if (t) return;
 			let n = e instanceof Error ? e : Error(String(e));
-			K("error"), z.current?.(n);
+			G("error"), z.current?.(n);
 		}), () => {
 			t = !0, M(n);
 		};
@@ -427,18 +427,18 @@ function F({ src: n, width: o, height: s, pixelScale: c = 1, randomness: l = .35
 		f,
 		p,
 		m,
+		ee,
 		W,
-		G,
 		S
 	]), t(() => () => {
 		B?.dispose?.();
 	}, [B]), /* @__PURE__ */ a("canvas", {
 		...I,
-		ref: q,
-		width: H?.width ?? J.width,
-		height: H?.height ?? J.height,
+		ref: K,
+		width: H?.width ?? q.width,
+		height: H?.height ?? q.height,
 		"aria-label": F,
-		"data-webgpu-status": ee
+		"data-webgpu-status": te
 	});
 }
 //#endregion
@@ -489,7 +489,7 @@ function U(e, t, n, r) {
 		e[s * n + r] = 1;
 	}
 }
-function W(e, t, n, r, i) {
+function ee(e, t, n, r, i) {
 	let a = e.length, o = r / a, s = o <= .5, c = Math.min(o, 1 - o), l = Math.min(2.25, Math.max(.8, .38 / Math.sqrt(c))), u = Math.min(7, Math.floor((t - 1) / 2), Math.ceil(l * 3)), d = B(l, u), f = d[u] * d[u], p = Math.max(1, Math.floor(Math.min(r - n, i - r) / 64));
 	for (let o = 0; o < L; o += 1) {
 		let o = V(e, t, r, s, d), c = [], l = [];
@@ -513,14 +513,14 @@ function W(e, t, n, r, i) {
 		if (_ === 0) break;
 	}
 }
-function G(e, t) {
+function W(e, t) {
 	let n = e.length, r = Math.min(R, Math.floor(Math.log2(t)));
 	for (let i = 1; i <= r; i += 1) {
 		let r = 2 ** i;
-		for (let i = 1; i < r; i += 2) W(e, t, Math.floor((i - 1) * n / r), Math.floor(i * n / r), Math.floor((i + 1) * n / r));
+		for (let i = 1; i < r; i += 2) ee(e, t, Math.floor((i - 1) * n / r), Math.floor(i * n / r), Math.floor((i + 1) * n / r));
 	}
 }
-function ee(e, t) {
+function te(e, t) {
 	let n = `${e}:${t >>> 0}`, r = I.get(n);
 	if (r) return r;
 	let i = e * e, a = z(i, t), o = new Float64Array(i), s = new Float64Array(i), c = [
@@ -551,24 +551,24 @@ function ee(e, t) {
 	l.sort((e, t) => s[e] - s[t]);
 	let u = new Uint32Array(i);
 	for (let e = 0; e < i; e += 1) u[l[e]] = e;
-	return G(u, e), I.set(n, u), u;
+	return W(u, e), I.set(n, u), u;
 }
 //#endregion
 //#region src/BlueNoiseWave.tsx
-var K = 1e3 / 60, q = [
+var G = 1e3 / 60, K = [
 	0,
 	0,
 	0,
 	1
-], J = [
+], q = [
 	1,
 	1,
 	1,
 	1
-], Y, te = /* @__PURE__ */ new WeakMap();
+], J, Y = /* @__PURE__ */ new WeakMap();
 function ne(e, t) {
-	let n = te.get(e);
-	n || (n = /* @__PURE__ */ new Map(), te.set(e, n));
+	let n = Y.get(e);
+	n || (n = /* @__PURE__ */ new Map(), Y.set(e, n));
 	let r = n.get(t);
 	return r || (r = g(e, "Blue-noise wave WGSL", c).then((n) => e.createRenderPipeline({
 		label: "Blue-noise wave",
@@ -617,16 +617,16 @@ function ae(e, t) {
 }
 function oe(e) {
 	let t = e.trim();
-	if (!Y) {
+	if (!J) {
 		let e = document.createElement("canvas");
-		e.width = 1, e.height = 1, Y = e.getContext("2d", { willReadFrequently: !0 }) ?? void 0;
+		e.width = 1, e.height = 1, J = e.getContext("2d", { willReadFrequently: !0 }) ?? void 0;
 	}
-	if (!Y) throw Error("CSS colors could not be resolved because a 2D canvas context is unavailable.");
-	Y.fillStyle = "#010203", Y.fillStyle = t;
-	let n = Y.fillStyle;
-	if (Y.fillStyle = "#040506", Y.fillStyle = t, !t || Y.fillStyle !== n) throw Error(`Invalid CSS color: ${JSON.stringify(e)}.`);
-	Y.clearRect(0, 0, 1, 1), Y.fillRect(0, 0, 1, 1);
-	let [r, i, a, o] = Y.getImageData(0, 0, 1, 1).data;
+	if (!J) throw Error("CSS colors could not be resolved because a 2D canvas context is unavailable.");
+	J.fillStyle = "#010203", J.fillStyle = t;
+	let n = J.fillStyle;
+	if (J.fillStyle = "#040506", J.fillStyle = t, !t || J.fillStyle !== n) throw Error(`Invalid CSS color: ${JSON.stringify(e)}.`);
+	J.clearRect(0, 0, 1, 1), J.fillRect(0, 0, 1, 1);
+	let [r, i, a, o] = J.getImageData(0, 0, 1, 1).data;
 	return [
 		r / 255,
 		i / 255,
@@ -648,7 +648,7 @@ function ce(e) {
 function le(e) {
 	e?.parameters.destroy(), e?.pattern.destroy();
 }
-function ue({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, invert: u = !1, seed: d = 1592594996, dark: f = q, light: p = J, powerPreference: m = "high-performance", onReady: g, onError: _, ref: v, "aria-label": y = "Blue-noise dithered wave", ...b }) {
+function ue({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, invert: u = !1, seed: d = 1592594996, dark: f = K, light: p = q, powerPreference: m = "high-performance", onReady: g, onError: _, ref: v, "aria-label": y = "Blue-noise dithered wave", ...b }) {
 	let x = r(null), S = r(g), C = r(_), [w, T] = i(), [E, D] = i("loading"), O = ae(o, s), k = ce(f), A = ce(p);
 	S.current = g, C.current = _;
 	let j = e((e) => {
@@ -689,7 +689,7 @@ function ue({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, inver
 			t || (t = !0, n && cancelAnimationFrame(n), le(r), r = void 0, D("error"), C.current?.(e instanceof Error ? e : Error(String(e))));
 		};
 		return (async () => {
-			let a = ie(c, 1), o = Math.round(re(l, 8, 128, 64)), s = Math.ceil(w.cssWidth / a), g = Math.ceil(w.cssHeight / a), _ = a * w.width / w.cssWidth, v = a * w.height / w.cssHeight, y = ee(o, d), b = await h(m);
+			let a = ie(c, 1), o = Math.round(re(l, 8, 128, 64)), s = Math.ceil(w.cssWidth / a), g = Math.ceil(w.cssHeight / a), _ = a * w.width / w.cssWidth, v = a * w.height / w.cssHeight, y = te(o, d), b = await h(m);
 			if (t) return;
 			let x = b.limits.maxTextureDimension2D;
 			if (w.width > x || w.height > x) throw Error(`The output exceeds this device's ${x}px texture limit.`);
@@ -731,14 +731,14 @@ function ue({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, inver
 					binding: 1,
 					resource: { buffer: k }
 				}]
-			}), P = performance.now(), F = P - K, I = !1, L = (r) => {
+			}), P = performance.now(), F = P - G, I = !1, L = (r) => {
 				if (t) return;
 				let a = r - F;
-				if (a < K) {
+				if (a < G) {
 					n = requestAnimationFrame(L);
 					return;
 				}
-				F = r - a % K;
+				F = r - a % G;
 				try {
 					j.setFloat32(28, (r - P) / 1e3, !0), b.queue.writeBuffer(O, 0, A);
 					let a = b.createCommandEncoder({ label: "Blue-noise wave" }), o = a.beginRenderPass({
@@ -794,24 +794,24 @@ function ue({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, inver
 	});
 }
 //#endregion
-//#region src/BlueNoiseFluid.tsx
-var de = 1e3 / 60, fe = .5, pe = 16, me = [
+//#region src/paintShaders.ts
+var de = "\nstruct Parameters {\n  size: vec2u,\n  deltaTime: f32,\n  seed: u32,\n  pointer: vec2f,\n  pointerVelocity: vec2f,\n  pointerActive: f32,\n  interactionRadius: f32,\n  time: f32,\n  quantity: u32,\n  viscosity: f32,\n  swirlStrength: f32,\n}\n\n@group(0) @binding(0) var<uniform> parameters: Parameters;\n@group(0) @binding(1) var previousState: texture_2d<f32>;\n@group(0) @binding(2) var linearSampler: sampler;\n@group(0) @binding(3) var nextState: texture_storage_2d<rgba16float, write>;\n@group(0) @binding(4) var secondaryState: texture_2d<f32>;\n\n// Velocity is measured in shorter-side lengths per second, so eddies stay\n// circular and pressure uses square cells in both portrait and landscape.\nfn gridScale() -> f32 { return f32(min(parameters.size.x, parameters.size.y)); }\nfn domainSize() -> vec2f { return vec2f(parameters.size) / gridScale(); }\nfn simulationUv(cell: vec2u) -> vec2f {\n  return (vec2f(cell) + vec2f(0.5)) / vec2f(parameters.size);\n}\nfn isBoundary(cell: vec2u) -> bool {\n  return any(cell == vec2u(0u)) || any(cell + vec2u(1u) == parameters.size);\n}\nfn nearestInterior(cell: vec2u) -> vec2i {\n  return clamp(vec2i(cell), vec2i(1), vec2i(parameters.size) - vec2i(2));\n}\nfn random01(value: u32) -> f32 {\n  var bits = value ^ parameters.seed;\n  bits = (bits ^ (bits >> 16u)) * 0x7feb352du;\n  bits = (bits ^ (bits >> 15u)) * 0x846ca68bu;\n  bits = bits ^ (bits >> 16u);\n  return f32(bits & 0x00ffffffu) / 16777216.0;\n}\nfn vortexCenter(index: u32) -> vec2f {\n  let phase = random01(index * 7u + 1u) * 6.2831853;\n  let base = vec2f(0.24 + 0.52 * random01(index * 7u + 2u),\n                   0.24 + 0.52 * random01(index * 7u + 3u));\n  return base + vec2f(sin(parameters.time * 0.13 + phase),\n                     cos(parameters.time * 0.11 + phase * 1.7)) * 0.1;\n}\nfn stirringVelocity(uv: vec2f) -> vec2f {\n  var velocity = vec2f(0.0);\n  for (var i = 0u; i < 6u; i += 1u) {\n    let offset = (uv - vortexCenter(i)) * domainSize();\n    let radius = 0.18 + random01(i * 7u + 4u) * 0.16;\n    let falloff = exp(-dot(offset, offset) / (radius * radius));\n    let direction = select(-1.0, 1.0, i % 2u == 0u);\n    let pulse = 0.8 + 0.2 * sin(parameters.time * 0.17 + f32(i) * 2.1);\n    velocity += vec2f(-offset.y, offset.x) / radius * falloff * direction * pulse * 0.42;\n  }\n  return velocity * parameters.swirlStrength;\n}\nfn confinedVelocity(cell: vec2u, value: vec2f) -> vec2f {\n  var velocity = value;\n  let first = 1u;\n  let last = parameters.size - vec2u(2u);\n  if (cell.x <= first && velocity.x < 0.0) { velocity.x = 0.0; }\n  if (cell.x >= last.x && velocity.x > 0.0) { velocity.x = 0.0; }\n  if (cell.y <= first && velocity.y < 0.0) { velocity.y = 0.0; }\n  if (cell.y >= last.y && velocity.y > 0.0) { velocity.y = 0.0; }\n  let speed = length(velocity);\n  return velocity * min(1.0, 0.65 / max(speed, 0.00001));\n}\n\n@compute @workgroup_size(8, 8)\nfn initialize(@builtin(global_invocation_id) id: vec3u) {\n  if (any(id.xy >= parameters.size)) { return; }\n  // Begin empty and at rest; the sources build the scene over time.\n  textureStore(nextState, vec2i(id.xy), vec4f(0.0));\n}\n\n@compute @workgroup_size(8, 8)\nfn clearScalar(@builtin(global_invocation_id) id: vec3u) {\n  if (any(id.xy >= parameters.size)) { return; }\n  textureStore(nextState, vec2i(id.xy), vec4f(0.0));\n}\n\n@compute @workgroup_size(8, 8)\nfn resample(@builtin(global_invocation_id) id: vec3u) {\n  if (any(id.xy >= parameters.size)) { return; }\n  let state = textureSampleLevel(previousState, linearSampler, simulationUv(id.xy), 0.0);\n  var velocity = confinedVelocity(id.xy, state.xy);\n  if (isBoundary(id.xy)) {\n    velocity = vec2f(0.0);\n  }\n  textureStore(nextState, vec2i(id.xy), vec4f(velocity, 0.0, state.w));\n}\n\n@compute @workgroup_size(8, 8)\nfn advect(@builtin(global_invocation_id) id: vec3u) {\n  if (any(id.xy >= parameters.size)) { return; }\n  let cell = id.xy;\n  if (isBoundary(cell)) {\n    // Solid walls stop motion, but pigment can reach them without being erased.\n    let pigment = textureLoad(previousState, nearestInterior(cell), 0).w;\n    textureStore(nextState, vec2i(cell), vec4f(0.0, 0.0, 0.0, pigment));\n    return;\n  }\n  let uv = simulationUv(cell);\n  let current = textureLoad(previousState, vec2i(cell), 0);\n  let sampleMin = vec2f(1.5) / vec2f(parameters.size);\n  let backUv = clamp(uv - current.xy * parameters.deltaTime / domainSize(), sampleMin, vec2f(1.0) - sampleMin);\n  let advected = textureSampleLevel(previousState, linearSampler, backUv, 0.0);\n  let left = textureLoad(previousState, vec2i(cell) + vec2i(-1, 0), 0);\n  let right = textureLoad(previousState, vec2i(cell) + vec2i(1, 0), 0);\n  let up = textureLoad(previousState, vec2i(cell) + vec2i(0, -1), 0);\n  let down = textureLoad(previousState, vec2i(cell) + vec2i(0, 1), 0);\n  let neighborVelocity = (left.xy + right.xy + up.xy + down.xy) * 0.25;\n  var velocity = mix(advected.xy, neighborVelocity, 1.0 - exp(-parameters.viscosity * parameters.deltaTime));\n\n  // A changing mixture of clockwise and counterclockwise eddies supplies\n  // energy throughout the box. There is no gravity or preferred direction.\n  // Ease in automatic stirring and pigment over the first two seconds.\n  let startup = smoothstep(0.0, 2.0, parameters.time);\n  velocity = mix(velocity, stirringVelocity(uv) * startup, 1.0 - exp(-parameters.deltaTime * 0.65));\n  var pigment = advected.w * exp(-parameters.deltaTime * 0.045);\n  // Slowly replenish paint in the interior so a long-running scene does not\n  // diffuse to a uniform field. These sources travel with the stirring centers.\n  for (var i = 0u; i < 3u; i += 1u) {\n    let offset = (uv - vortexCenter(i * 2u)) * domainSize();\n    let source = exp(-dot(offset, offset) / 0.012);\n    pigment += source * (1.0 - pigment) * parameters.deltaTime * 0.3 * startup;\n  }\n\n  if (parameters.pointerActive > 0.5) {\n    let offset = (uv - parameters.pointer) * domainSize();\n    let radius = max(0.01, parameters.interactionRadius);\n    let falloff = exp(-dot(offset, offset) / (radius * radius));\n    velocity += parameters.pointerVelocity * domainSize() * falloff * parameters.deltaTime * 1.8;\n    if (parameters.quantity != 0u) {\n      pigment += falloff * parameters.deltaTime * 2.5;\n    }\n  }\n\n  textureStore(nextState, vec2i(cell), vec4f(confinedVelocity(cell, velocity), 0.0, clamp(pigment, 0.0, 1.0)));\n}\n\n@compute @workgroup_size(8, 8)\nfn divergence(@builtin(global_invocation_id) id: vec3u) {\n  if (any(id.xy >= parameters.size)) { return; }\n  let cell = id.xy;\n  if (isBoundary(cell)) {\n    textureStore(nextState, vec2i(cell), vec4f(0.0));\n    return;\n  }\n  let left = textureLoad(previousState, vec2i(cell) + vec2i(-1, 0), 0).xy;\n  let right = textureLoad(previousState, vec2i(cell) + vec2i(1, 0), 0).xy;\n  let up = textureLoad(previousState, vec2i(cell) + vec2i(0, -1), 0).xy;\n  let down = textureLoad(previousState, vec2i(cell) + vec2i(0, 1), 0).xy;\n  let value = 0.5 * gridScale() * (right.x - left.x + down.y - up.y);\n  textureStore(nextState, vec2i(cell), vec4f(value, 0.0, 0.0, 0.0));\n}\n\n@compute @workgroup_size(8, 8)\nfn solvePressure(@builtin(global_invocation_id) id: vec3u) {\n  if (any(id.xy >= parameters.size)) { return; }\n  let cell = id.xy;\n  if (isBoundary(cell)) {\n    // Neumann pressure at the canvas walls: copy the nearest fluid cell.\n    let pressure = textureLoad(previousState, nearestInterior(cell), 0).x;\n    textureStore(nextState, vec2i(cell), vec4f(pressure, 0.0, 0.0, 0.0));\n    return;\n  }\n  let left = textureLoad(previousState, vec2i(cell) + vec2i(-1, 0), 0).x;\n  let right = textureLoad(previousState, vec2i(cell) + vec2i(1, 0), 0).x;\n  let up = textureLoad(previousState, vec2i(cell) + vec2i(0, -1), 0).x;\n  let down = textureLoad(previousState, vec2i(cell) + vec2i(0, 1), 0).x;\n  let source = textureLoad(secondaryState, vec2i(cell), 0).x;\n  let pressure = (left + right + up + down - source / (gridScale() * gridScale())) * 0.25;\n  textureStore(nextState, vec2i(cell), vec4f(pressure, 0.0, 0.0, 0.0));\n}\n\n@compute @workgroup_size(8, 8)\nfn project(@builtin(global_invocation_id) id: vec3u) {\n  if (any(id.xy >= parameters.size)) { return; }\n  let cell = id.xy;\n  let advected = textureLoad(previousState, vec2i(cell), 0);\n  if (isBoundary(cell)) {\n    textureStore(nextState, vec2i(cell), vec4f(0.0, 0.0, 0.0, advected.w));\n    return;\n  }\n  let left = textureLoad(secondaryState, vec2i(cell) + vec2i(-1, 0), 0).x;\n  let right = textureLoad(secondaryState, vec2i(cell) + vec2i(1, 0), 0).x;\n  let up = textureLoad(secondaryState, vec2i(cell) + vec2i(0, -1), 0).x;\n  let down = textureLoad(secondaryState, vec2i(cell) + vec2i(0, 1), 0).x;\n  let velocity = advected.xy - 0.5 * gridScale() * vec2f(right - left, down - up);\n  textureStore(nextState, vec2i(cell), vec4f(confinedVelocity(cell, velocity), 0.0, advected.w));\n}\n", fe = "\nstruct Parameters {\n  logicalSize: vec2u,\n  cellSize: vec2f,\n  patternSize: u32,\n  quantity: u32,\n  invert: u32,\n  contrast: f32,\n  dark: vec4f,\n  light: vec4f,\n}\n\n@group(0) @binding(0) var<uniform> parameters: Parameters;\n@group(0) @binding(1) var<storage, read> noiseRanks: array<u32>;\n@group(0) @binding(2) var fluidState: texture_2d<f32>;\n@group(0) @binding(3) var linearSampler: sampler;\n\n@vertex\nfn vertexMain(@builtin(vertex_index) index: u32) -> @builtin(position) vec4f {\n  let x = f32((index << 1u) & 2u);\n  let y = f32(index & 2u);\n  return vec4f(x * 2.0 - 1.0, 1.0 - y * 2.0, 0.0, 1.0);\n}\n\n@fragment\nfn fragmentMain(@builtin(position) position: vec4f) -> @location(0) vec4f {\n  let size = max(parameters.logicalSize, vec2u(1u));\n  let cell = min(vec2u(position.xy / max(parameters.cellSize, vec2f(0.0001))), size - vec2u(1u));\n  let uv = (vec2f(cell) + vec2f(0.5)) / vec2f(size);\n  let fluid = textureSampleLevel(fluidState, linearSampler, uv, 0.0);\n  let pigment = smoothstep(0.06, 0.72, fluid.w);\n  let speed = smoothstep(0.008, 0.2, length(fluid.xy));\n  var luminance = select(speed, pigment, parameters.quantity != 0u);\n  luminance = clamp((luminance - 0.5) * parameters.contrast + 0.5, 0.0, 1.0);\n  luminance = select(luminance, 1.0 - luminance, parameters.invert != 0u);\n  let patternCell = cell % vec2u(parameters.patternSize);\n  let rank = noiseRanks[patternCell.y * parameters.patternSize + patternCell.x];\n  let threshold = (f32(rank) + 0.5) / f32(parameters.patternSize * parameters.patternSize);\n  return select(parameters.dark, parameters.light, luminance >= threshold);\n}\n", pe = 1e3 / 60, me = .5, he = 16, ge = [
 	0,
 	0,
 	0,
 	1
-], he = [
+], _e = [
 	1,
 	1,
 	1,
 	1
-], X, ge = /* @__PURE__ */ new WeakMap();
-function _e(e, t) {
-	let n = ge.get(e);
-	n || (n = /* @__PURE__ */ new Map(), ge.set(e, n));
-	let r = n.get(t);
-	return r || (r = (async () => {
-		let [n, r] = await Promise.all([g(e, "Fluid simulation WGSL", l), g(e, "Blue-noise fluid WGSL", u)]), i = e.createBindGroupLayout({
+], X, ve = /* @__PURE__ */ new WeakMap();
+function ye(e, t, n) {
+	let r = ve.get(e);
+	r || (r = /* @__PURE__ */ new Map(), ve.set(e, r));
+	let i = `${t}:${n}`, a = r.get(i);
+	return a || (a = (async () => {
+		let [r, i] = await Promise.all([g(e, "Fluid simulation WGSL", n === "paint" ? de : l), g(e, "Blue-noise fluid WGSL", n === "paint" ? fe : u)]), a = e.createBindGroupLayout({
 			label: "Fluid simulation bindings",
 			entries: [
 				{
@@ -843,102 +843,102 @@ function _e(e, t) {
 					texture: { sampleType: "float" }
 				}
 			]
-		}), a = e.createPipelineLayout({ bindGroupLayouts: [i] });
+		}), o = e.createPipelineLayout({ bindGroupLayouts: [a] });
 		return {
 			initialize: e.createComputePipeline({
 				label: "Initialize fluid",
-				layout: a,
+				layout: o,
 				compute: {
-					module: n,
+					module: r,
 					entryPoint: "initialize"
 				}
 			}),
 			clearScalar: e.createComputePipeline({
 				label: "Clear fluid scalar field",
-				layout: a,
+				layout: o,
 				compute: {
-					module: n,
+					module: r,
 					entryPoint: "clearScalar"
 				}
 			}),
 			resample: e.createComputePipeline({
 				label: "Resample fluid state",
-				layout: a,
+				layout: o,
 				compute: {
-					module: n,
+					module: r,
 					entryPoint: "resample"
 				}
 			}),
 			advect: e.createComputePipeline({
 				label: "Advect fluid",
-				layout: a,
+				layout: o,
 				compute: {
-					module: n,
+					module: r,
 					entryPoint: "advect"
 				}
 			}),
 			divergence: e.createComputePipeline({
 				label: "Measure fluid divergence",
-				layout: a,
+				layout: o,
 				compute: {
-					module: n,
+					module: r,
 					entryPoint: "divergence"
 				}
 			}),
 			solvePressure: e.createComputePipeline({
 				label: "Solve fluid pressure",
-				layout: a,
+				layout: o,
 				compute: {
-					module: n,
+					module: r,
 					entryPoint: "solvePressure"
 				}
 			}),
 			project: e.createComputePipeline({
 				label: "Project fluid velocity",
-				layout: a,
+				layout: o,
 				compute: {
-					module: n,
+					module: r,
 					entryPoint: "project"
 				}
 			}),
-			computeLayout: i,
+			computeLayout: a,
 			display: e.createRenderPipeline({
 				label: "Blue-noise fluid display",
 				layout: "auto",
 				vertex: {
-					module: r,
+					module: i,
 					entryPoint: "vertexMain"
 				},
 				fragment: {
-					module: r,
+					module: i,
 					entryPoint: "fragmentMain",
 					targets: [{ format: t }]
 				},
 				primitive: { topology: "triangle-list" }
 			})
 		};
-	})(), n.set(t, r)), r;
+	})(), r.set(i, a)), a;
 }
 function Z(e, t, n, r) {
 	return Number.isFinite(e) ? Math.min(n, Math.max(t, e)) : r;
 }
-function ve(e, t) {
+function be(e, t) {
 	return Math.max(1, Math.round(Number.isFinite(e) ? e : t));
 }
-function ye(e, t) {
+function xe(e, t) {
 	if (e !== void 0 && t !== void 0) return {
-		width: ve(e, 900),
-		height: ve(t, 600)
+		width: be(e, 900),
+		height: be(t, 600)
 	};
 	if (e !== void 0) {
-		let t = ve(e, 900);
+		let t = be(e, 900);
 		return {
 			width: t,
 			height: Math.max(1, Math.round(t * 2 / 3))
 		};
 	}
 	if (t !== void 0) {
-		let e = ve(t, 600);
+		let e = be(t, 600);
 		return {
 			width: Math.max(1, Math.round(e * 3 / 2)),
 			height: e
@@ -949,7 +949,7 @@ function ye(e, t) {
 		height: 600
 	};
 }
-function be(e) {
+function Se(e) {
 	let t = e.trim();
 	if (!X) {
 		let e = document.createElement("canvas");
@@ -968,71 +968,79 @@ function be(e) {
 		o / 255
 	];
 }
-function xe(e) {
-	return typeof e == "string" ? be(e) : [
+function Ce(e) {
+	return typeof e == "string" ? Se(e) : [
 		Z(e[0], 0, 1, 0),
 		Z(e[1], 0, 1, 0),
 		Z(e[2], 0, 1, 0),
 		Z(e[3] ?? 1, 0, 1, 1)
 	];
 }
-function Se(e) {
+function we(e) {
 	return typeof e == "string" ? `css:${e}` : `tuple:${e.join(",")}`;
 }
-function Ce(e) {
+function Te(e) {
 	e?.simulationParameters.destroy(), e?.displayParameters.destroy(), e?.pattern.destroy(), e?.state.destroy(), e?.advectedState.destroy(), e?.divergence.destroy(), e?.pressureA.destroy(), e?.pressureB.destroy();
 }
-function we({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simulationSize: u = 192, interactionRadius: d = .05, viscosity: f = 1, quantity: p = "temperature", contrast: m = 1, invert: g = !1, seed: _ = 1592594996, dark: v = me, light: y = he, powerPreference: b = "high-performance", onReady: x, onError: S, ref: C, style: w, "aria-label": T = "Interactive blue-noise fluid simulation", ...E }) {
-	let D = r(null), O = r({
+function Ee(e) {
+	return /* @__PURE__ */ a(De, {
+		...e,
+		setup: "convection"
+	});
+}
+function De({ setup: o, swirlStrength: s = 1, width: c, height: l, pixelScale: u = 2, patternSize: d = 64, simulationSize: f = 192, interactionRadius: p = .05, viscosity: m = 1, quantity: g = "temperature", contrast: _ = 1, invert: v = !1, seed: y = 1592594996, dark: b = ge, light: x = _e, powerPreference: S = "high-performance", onReady: C, onError: w, ref: T, style: E, "aria-label": D = "Interactive blue-noise fluid simulation", ...O }) {
+	let k = r(null), A = r({
 		x: .5,
 		y: .5,
 		velocityX: 0,
 		velocityY: 0,
 		lastEventTime: 0,
 		lastMoveTime: -Infinity
-	}), k = r(x), A = r(S), [j, M] = i(), [N, P] = i("loading"), F = ye(o, s), I = Se(v), L = Se(y);
-	k.current = x, A.current = S;
-	let R = r(void 0), z = r({
-		pixelScale: c,
-		patternSize: l,
-		simulationSize: u,
-		interactionRadius: d,
-		viscosity: f,
-		quantity: p,
-		contrast: m,
-		invert: g,
-		darkDependency: I,
-		lightDependency: L,
-		seed: _,
-		powerPreference: b,
-		dark: v,
-		light: y
+	}), j = r(C), M = r(w), [N, P] = i(), [F, I] = i("loading"), L = xe(c, l), R = we(b), z = we(x);
+	j.current = C, M.current = w;
+	let B = r(void 0), V = r({
+		swirlStrength: s,
+		pixelScale: u,
+		patternSize: d,
+		simulationSize: f,
+		interactionRadius: p,
+		viscosity: m,
+		quantity: g,
+		contrast: _,
+		invert: v,
+		darkDependency: R,
+		lightDependency: z,
+		seed: y,
+		powerPreference: S,
+		dark: b,
+		light: x
 	});
-	z.current = {
-		pixelScale: c,
-		patternSize: l,
-		simulationSize: u,
-		interactionRadius: d,
-		viscosity: f,
-		quantity: p,
-		contrast: m,
-		invert: g,
-		darkDependency: I,
-		lightDependency: L,
-		seed: _,
-		powerPreference: b,
-		dark: v,
-		light: y
+	V.current = {
+		swirlStrength: s,
+		pixelScale: u,
+		patternSize: d,
+		simulationSize: f,
+		interactionRadius: p,
+		viscosity: m,
+		quantity: g,
+		contrast: _,
+		invert: v,
+		darkDependency: R,
+		lightDependency: z,
+		seed: y,
+		powerPreference: S,
+		dark: b,
+		light: x
 	}, r(void 0);
-	let B = r(F);
-	B.current = F;
-	let V = e((e) => {
-		D.current = e, typeof C == "function" ? C(e) : C && (C.current = e);
-	}, [C]);
+	let H = r(L);
+	H.current = L;
+	let U = e((e) => {
+		k.current = e, typeof T == "function" ? T(e) : T && (T.current = e);
+	}, [T]);
 	return t(() => {
-		M(void 0);
-	}, [o, s]), t(() => {
-		let e = D.current;
+		P(void 0);
+	}, [c, l]), t(() => {
+		let e = k.current;
 		if (!e) return;
 		let t = 0, n = 0, r, i = (e = t, r = n) => {
 			if (e = Math.round(e * 64) / 64, r = Math.round(r * 64) / 64, e <= 0 || r <= 0) return;
@@ -1044,7 +1052,7 @@ function we({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 				cssHeight: r,
 				devicePixelRatio: i
 			};
-			R.current = a, M((e) => e && e.width === a.width && e.height === a.height && e.cssWidth === a.cssWidth && e.cssHeight === a.cssHeight && e.devicePixelRatio === a.devicePixelRatio ? e : a);
+			B.current = a, P((e) => e && e.width === a.width && e.height === a.height && e.cssWidth === a.cssWidth && e.cssHeight === a.cssHeight && e.devicePixelRatio === a.devicePixelRatio ? e : a);
 		}, a = new ResizeObserver(([e]) => {
 			e && i(e.contentRect.width, e.contentRect.height);
 		});
@@ -1055,84 +1063,84 @@ function we({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 		return window.addEventListener("resize", o), o(), () => {
 			a.disconnect(), window.removeEventListener("resize", o), r?.removeEventListener("change", o);
 		};
-	}, [F.width, F.height]), t(() => {
-		let e = D.current;
+	}, [L.width, L.height]), t(() => {
+		let e = k.current;
 		if (!e) return;
 		let t = (t) => {
 			let n = e.getBoundingClientRect();
-			O.current.x = Z((t.clientX - n.left) / n.width, 0, 1, .5), O.current.y = Z((t.clientY - n.top) / n.height, 0, 1, .5), O.current.velocityX = 0, O.current.velocityY = 0, O.current.lastEventTime = t.timeStamp;
+			A.current.x = Z((t.clientX - n.left) / n.width, 0, 1, .5), A.current.y = Z((t.clientY - n.top) / n.height, 0, 1, .5), A.current.velocityX = 0, A.current.velocityY = 0, A.current.lastEventTime = t.timeStamp;
 		}, n = (t) => {
-			let n = e.getBoundingClientRect(), r = Z((t.clientX - n.left) / n.width, 0, 1, .5), i = Z((t.clientY - n.top) / n.height, 0, 1, .5), a = O.current, o = Math.max(1 / 240, (t.timeStamp - a.lastEventTime) / 1e3);
+			let n = e.getBoundingClientRect(), r = Z((t.clientX - n.left) / n.width, 0, 1, .5), i = Z((t.clientY - n.top) / n.height, 0, 1, .5), a = A.current, o = Math.max(1 / 240, (t.timeStamp - a.lastEventTime) / 1e3);
 			a.velocityX = Z((r - a.x) / o, -3, 3, 0), a.velocityY = Z((i - a.y) / o, -3, 3, 0), a.x = r, a.y = i, a.lastEventTime = t.timeStamp, a.lastMoveTime = performance.now();
 		}, r = () => {
-			O.current.lastMoveTime = -Infinity;
+			A.current.lastMoveTime = -Infinity;
 		}, i = (n) => {
-			t(n), O.current.lastMoveTime = performance.now(), e.setPointerCapture(n.pointerId);
+			t(n), A.current.lastMoveTime = performance.now(), e.setPointerCapture(n.pointerId);
 		};
 		return e.addEventListener("pointerenter", t), e.addEventListener("pointermove", n), e.addEventListener("pointerleave", r), e.addEventListener("pointerdown", i), () => {
 			e.removeEventListener("pointerenter", t), e.removeEventListener("pointermove", n), e.removeEventListener("pointerleave", r), e.removeEventListener("pointerdown", i);
 		};
 	}, []), n(() => {
-		let e = D.current;
+		let e = k.current;
 		if (!e) return;
 		let t = !1, n = 0, r;
-		P("loading");
+		I("loading");
 		let i = (e) => {
-			t || (t = !0, n && cancelAnimationFrame(n), Ce(r), r = void 0, P("error"), A.current?.(e instanceof Error ? e : Error(String(e))));
+			t || (t = !0, n && cancelAnimationFrame(n), Te(r), r = void 0, I("error"), M.current?.(e instanceof Error ? e : Error(String(e))));
 		};
 		return (async () => {
-			let a = z.current, o = Math.round(Z(a.simulationSize, 32, 384, 192)), s = Math.round(Z(a.patternSize, 8, 128, 64)), c = R.current ?? {
+			let a = V.current, s = Math.round(Z(a.simulationSize, 32, 384, 192)), c = Math.round(Z(a.patternSize, 8, 128, 64)), l = B.current ?? {
 				width: e.width,
 				height: e.height,
-				cssWidth: e.clientWidth || B.current.width,
-				cssHeight: e.clientHeight || B.current.height,
+				cssWidth: e.clientWidth || H.current.width,
+				cssHeight: e.clientHeight || H.current.height,
 				devicePixelRatio: window.devicePixelRatio || 1
-			}, l = c.cssWidth / c.cssHeight, u = l >= 1 ? o : Math.max(16, Math.round(o * l)), d = l >= 1 ? Math.max(16, Math.round(o / l)) : o, f = Math.ceil(c.cssWidth / Math.max(1, Math.round(a.pixelScale))), p = Math.ceil(c.cssHeight / Math.max(1, Math.round(a.pixelScale))), m = ee(s, a.seed), g = await h(a.powerPreference);
+			}, u = l.cssWidth / l.cssHeight, d = u >= 1 ? s : Math.max(16, Math.round(s * u)), f = u >= 1 ? Math.max(16, Math.round(s / u)) : s, p = Math.ceil(l.cssWidth / Math.max(1, Math.round(a.pixelScale))), m = Math.ceil(l.cssHeight / Math.max(1, Math.round(a.pixelScale))), g = te(c, a.seed), _ = await h(a.powerPreference);
 			if (t) return;
-			let _ = g.limits.maxTextureDimension2D;
-			if (c.width > _ || c.height > _ || u > _ || d > _) throw Error(`The output or simulation exceeds this device's ${_}px texture limit.`);
-			let v = e.getContext("webgpu");
-			if (!v) throw Error("The canvas could not create a WebGPU context.");
-			let y = navigator.gpu.getPreferredCanvasFormat();
-			v.configure({
-				device: g,
-				format: y,
+			let v = _.limits.maxTextureDimension2D;
+			if (l.width > v || l.height > v || d > v || f > v) throw Error(`The output or simulation exceeds this device's ${v}px texture limit.`);
+			let y = e.getContext("webgpu");
+			if (!y) throw Error("The canvas could not create a WebGPU context.");
+			let b = navigator.gpu.getPreferredCanvasFormat();
+			y.configure({
+				device: _,
+				format: b,
 				alphaMode: "premultiplied"
 			});
-			let b = await _e(g, y);
+			let x = await ye(_, b, o);
 			if (t) return;
-			let x = g.createBuffer({
+			let S = _.createBuffer({
 				label: "Fluid simulation parameters",
 				size: 56,
 				usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-			}), S = g.createBuffer({
+			}), C = _.createBuffer({
 				label: "Blue-noise fluid display parameters",
 				size: 64,
 				usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-			}), C = g.createBuffer({
+			}), w = _.createBuffer({
 				label: "Tileable blue-noise ranks",
 				size: 65536,
 				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-			}), w = {
-				size: [u, d],
+			}), T = {
+				size: [d, f],
 				format: "rgba16float",
 				usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING
-			}, T = g.createTexture({
-				...w,
+			}, E = _.createTexture({
+				...T,
 				label: "Fluid state"
-			}), E = g.createTexture({
-				...w,
+			}), D = _.createTexture({
+				...T,
 				label: "Advected fluid state"
-			}), D = g.createTexture({
-				...w,
+			}), O = _.createTexture({
+				...T,
 				label: "Fluid divergence"
-			}), A = g.createTexture({
-				...w,
+			}), k = _.createTexture({
+				...T,
 				label: "Fluid pressure A"
-			}), j = g.createTexture({
-				...w,
+			}), M = _.createTexture({
+				...T,
 				label: "Fluid pressure B"
-			}), M = g.createSampler({
+			}), N = _.createSampler({
 				label: "Fluid linear sampler",
 				magFilter: "linear",
 				minFilter: "linear",
@@ -1140,33 +1148,33 @@ function we({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 				addressModeV: "clamp-to-edge"
 			});
 			r = {
-				simulationParameters: x,
-				displayParameters: S,
-				pattern: C,
-				state: T,
-				advectedState: E,
-				divergence: D,
-				pressureA: A,
-				pressureB: j,
-				sampler: M
-			}, g.queue.writeBuffer(C, 0, m);
-			let N = /* @__PURE__ */ new ArrayBuffer(56), F = new DataView(N);
-			F.setUint32(0, u, !0), F.setUint32(4, d, !0), F.setUint32(12, a.seed >>> 0, !0), F.setFloat32(36, Z(a.interactionRadius, .01, .3, .05), !0), F.setUint32(44, +(a.quantity === "temperature"), !0), F.setFloat32(48, Z(a.viscosity, 0, 20, 1), !0), g.queue.writeBuffer(x, 0, N);
-			let I = /* @__PURE__ */ new ArrayBuffer(64), L = new DataView(I), V = Math.max(1, Math.round(a.pixelScale));
-			L.setUint32(0, f, !0), L.setUint32(4, p, !0), L.setFloat32(8, V * c.width / c.cssWidth, !0), L.setFloat32(12, V * c.height / c.cssHeight, !0), L.setUint32(16, s, !0), L.setUint32(20, +(a.quantity === "temperature"), !0), L.setUint32(24, +!!a.invert, !0), L.setFloat32(28, Z(a.contrast, .25, 8, 1), !0);
-			let H = {
+				simulationParameters: S,
+				displayParameters: C,
+				pattern: w,
+				state: E,
+				advectedState: D,
+				divergence: O,
+				pressureA: k,
+				pressureB: M,
+				sampler: N
+			}, _.queue.writeBuffer(w, 0, g);
+			let P = /* @__PURE__ */ new ArrayBuffer(56), F = new DataView(P);
+			F.setUint32(0, d, !0), F.setUint32(4, f, !0), F.setUint32(12, a.seed >>> 0, !0), F.setFloat32(36, Z(a.interactionRadius, .01, .3, .05), !0), F.setUint32(44, +(a.quantity === "temperature"), !0), F.setFloat32(48, Z(a.viscosity, 0, 20, 1), !0), F.setFloat32(52, Z(a.swirlStrength, 0, 3, 1), !0), _.queue.writeBuffer(S, 0, P);
+			let L = /* @__PURE__ */ new ArrayBuffer(64), R = new DataView(L), z = Math.max(1, Math.round(a.pixelScale));
+			R.setUint32(0, p, !0), R.setUint32(4, m, !0), R.setFloat32(8, z * l.width / l.cssWidth, !0), R.setFloat32(12, z * l.height / l.cssHeight, !0), R.setUint32(16, c, !0), R.setUint32(20, +(a.quantity === "temperature"), !0), R.setUint32(24, +!!a.invert, !0), R.setFloat32(28, Z(a.contrast, .25, 8, 1), !0);
+			let U = {
 				key: `${a.darkDependency}|${a.lightDependency}`,
-				dark: xe(a.dark),
-				light: xe(a.light)
-			}, U = new Float32Array(I, 32, 8);
-			U.set(H.dark, 0), U.set(H.light, 4), g.queue.writeBuffer(S, 0, I);
-			let W = T.createView(), G = E.createView(), K = D.createView(), q = A.createView(), J = j.createView(), Y = (e, t, n, r) => g.createBindGroup({
+				dark: Ce(a.dark),
+				light: Ce(a.light)
+			}, ee = new Float32Array(L, 32, 8);
+			ee.set(U.dark, 0), ee.set(U.light, 4), _.queue.writeBuffer(C, 0, L);
+			let W = E.createView(), G = D.createView(), K = O.createView(), q = k.createView(), J = M.createView(), Y = (e, t, n, r) => _.createBindGroup({
 				label: e,
-				layout: b.computeLayout,
+				layout: x.computeLayout,
 				entries: [
 					{
 						binding: 0,
-						resource: { buffer: x }
+						resource: { buffer: S }
 					},
 					{
 						binding: 1,
@@ -1174,7 +1182,7 @@ function we({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 					},
 					{
 						binding: 2,
-						resource: M
+						resource: N
 					},
 					{
 						binding: 3,
@@ -1185,17 +1193,17 @@ function we({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 						resource: r
 					}
 				]
-			}), te = Y("Initialize fluid state", G, W, K), ne = Y("Clear fluid pressure A", W, q, K), re = Y("Clear fluid pressure B", W, J, K), ie = Y("Advect fluid state", W, G, K), ae = Y("Measure fluid divergence", G, K, q), oe = [Y("Solve pressure A to B", q, J, K), Y("Solve pressure B to A", J, q, K)], se = Y("Project fluid velocity", G, W, q), ce = g.createBindGroup({
+			}), ne = Y("Initialize fluid state", G, W, K), re = Y("Clear fluid pressure A", W, q, K), ie = Y("Clear fluid pressure B", W, J, K), ae = Y("Advect fluid state", W, G, K), oe = Y("Measure fluid divergence", G, K, q), se = [Y("Solve pressure A to B", q, J, K), Y("Solve pressure B to A", J, q, K)], ce = Y("Project fluid velocity", G, W, q), le = _.createBindGroup({
 				label: "Blue-noise fluid display",
-				layout: b.display.getBindGroupLayout(0),
+				layout: x.display.getBindGroupLayout(0),
 				entries: [
 					{
 						binding: 0,
-						resource: { buffer: S }
+						resource: { buffer: C }
 					},
 					{
 						binding: 1,
-						resource: { buffer: C }
+						resource: { buffer: w }
 					},
 					{
 						binding: 2,
@@ -1203,45 +1211,45 @@ function we({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 					},
 					{
 						binding: 3,
-						resource: M
+						resource: N
 					}
 				]
-			}), le = g.createCommandEncoder({ label: "Initialize fluid" }), ue = le.beginComputePass();
-			ue.setPipeline(b.initialize), ue.setBindGroup(0, te), ue.dispatchWorkgroups(Math.ceil(u / 8), Math.ceil(d / 8)), ue.setPipeline(b.clearScalar), ue.setBindGroup(0, ne), ue.dispatchWorkgroups(Math.ceil(u / 8), Math.ceil(d / 8)), ue.setBindGroup(0, re), ue.dispatchWorkgroups(Math.ceil(u / 8), Math.ceil(d / 8)), ue.end(), g.queue.submit([le.finish()]);
-			let me = performance.now(), he = me - de, X = me, ge = !1, ve = (e, t) => {
+			}), ue = _.createCommandEncoder({ label: "Initialize fluid" }), de = ue.beginComputePass();
+			de.setPipeline(x.initialize), de.setBindGroup(0, ne), de.dispatchWorkgroups(Math.ceil(d / 8), Math.ceil(f / 8)), de.setPipeline(x.clearScalar), de.setBindGroup(0, re), de.dispatchWorkgroups(Math.ceil(d / 8), Math.ceil(f / 8)), de.setBindGroup(0, ie), de.dispatchWorkgroups(Math.ceil(d / 8), Math.ceil(f / 8)), de.end(), _.queue.submit([ue.finish()]);
+			let fe = performance.now(), ge = fe - pe, _e = fe, X = !1, ve = (e, t) => {
 				let n = {
 					size: [e, t],
 					format: "rgba16float",
 					usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.STORAGE_BINDING
-				}, i = g.createTexture({
+				}, i = _.createTexture({
 					...n,
 					label: "Fluid state"
-				}), a = g.createTexture({
+				}), a = _.createTexture({
 					...n,
 					label: "Advected fluid state"
-				}), o = g.createTexture({
+				}), o = _.createTexture({
 					...n,
 					label: "Fluid divergence"
-				}), s = g.createTexture({
+				}), s = _.createTexture({
 					...n,
 					label: "Fluid pressure A"
-				}), c = g.createTexture({
+				}), c = _.createTexture({
 					...n,
 					label: "Fluid pressure B"
-				}), l = i.createView(), f = a.createView(), p = o.createView(), m = s.createView(), h = c.createView();
-				F.setUint32(0, e, !0), F.setUint32(4, t, !0), g.queue.writeBuffer(x, 0, N);
-				let _ = Y("Resample fluid state", W, l, W), v = g.createCommandEncoder({ label: "Resample fluid state" }), y = v.beginComputePass();
-				y.setPipeline(b.resample), y.setBindGroup(0, _), y.dispatchWorkgroups(Math.ceil(e / 8), Math.ceil(t / 8)), y.end(), g.queue.submit([v.finish()]), T.destroy(), E.destroy(), D.destroy(), A.destroy(), j.destroy(), T = i, E = a, D = o, A = s, j = c, r && (r.state = i, r.advectedState = a, r.divergence = o, r.pressureA = s, r.pressureB = c), W = l, G = f, K = p, q = m, J = h, u = e, d = t, ie = Y("Advect fluid state", W, G, K), ae = Y("Measure fluid divergence", G, K, q), oe = [Y("Solve pressure A to B", q, J, K), Y("Solve pressure B to A", J, q, K)], se = Y("Project fluid velocity", G, W, q), ce = g.createBindGroup({
+				}), l = i.createView(), u = a.createView(), p = o.createView(), m = s.createView(), h = c.createView();
+				F.setUint32(0, e, !0), F.setUint32(4, t, !0), _.queue.writeBuffer(S, 0, P);
+				let g = Y("Resample fluid state", W, l, W), v = _.createCommandEncoder({ label: "Resample fluid state" }), y = v.beginComputePass();
+				y.setPipeline(x.resample), y.setBindGroup(0, g), y.dispatchWorkgroups(Math.ceil(e / 8), Math.ceil(t / 8)), y.end(), _.queue.submit([v.finish()]), E.destroy(), D.destroy(), O.destroy(), k.destroy(), M.destroy(), E = i, D = a, O = o, k = s, M = c, r && (r.state = i, r.advectedState = a, r.divergence = o, r.pressureA = s, r.pressureB = c), W = l, G = u, K = p, q = m, J = h, d = e, f = t, ae = Y("Advect fluid state", W, G, K), oe = Y("Measure fluid divergence", G, K, q), se = [Y("Solve pressure A to B", q, J, K), Y("Solve pressure B to A", J, q, K)], ce = Y("Project fluid velocity", G, W, q), le = _.createBindGroup({
 					label: "Blue-noise fluid display",
-					layout: b.display.getBindGroupLayout(0),
+					layout: x.display.getBindGroupLayout(0),
 					entries: [
 						{
 							binding: 0,
-							resource: { buffer: S }
+							resource: { buffer: C }
 						},
 						{
 							binding: 1,
-							resource: { buffer: C }
+							resource: { buffer: w }
 						},
 						{
 							binding: 2,
@@ -1249,53 +1257,53 @@ function we({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 						},
 						{
 							binding: 3,
-							resource: M
+							resource: N
 						}
 					]
 				});
-			}, ye = (r) => {
+			}, be = (r) => {
 				if (t) return;
-				let a = r - he;
-				if (a < de) {
-					n = requestAnimationFrame(ye);
+				let a = r - ge;
+				if (a < pe) {
+					n = requestAnimationFrame(be);
 					return;
 				}
-				he = r - a % de;
+				ge = r - a % pe;
 				try {
-					let a = z.current, l = R.current;
-					if (l && l.cssWidth > 0 && l.cssHeight > 0) {
-						let e = l.cssWidth / l.cssHeight, t = e >= 1 ? o : Math.max(16, Math.round(o * e)), n = e >= 1 ? Math.max(16, Math.round(o / e)) : o;
-						(t !== u || n !== d) && ve(t, n);
+					let a = V.current, o = B.current;
+					if (o && o.cssWidth > 0 && o.cssHeight > 0) {
+						let e = o.cssWidth / o.cssHeight, t = e >= 1 ? s : Math.max(16, Math.round(s * e)), n = e >= 1 ? Math.max(16, Math.round(s / e)) : s;
+						(t !== d || n !== f) && ve(t, n);
 					}
-					let m = Math.round(Z(a.patternSize, 8, 128, 64));
-					m !== s && (s = m, g.queue.writeBuffer(C, 0, ee(m, a.seed)));
-					let h = Z((r - X) / 1e3, 1 / 240, 1 / 30, 1 / 60) * fe;
-					X = r;
-					let _ = O.current, y = performance.now() - _.lastMoveTime < 120;
-					if (F.setFloat32(8, h, !0), F.setFloat32(16, _.x, !0), F.setFloat32(20, _.y, !0), F.setFloat32(24, _.velocityX, !0), F.setFloat32(28, _.velocityY, !0), F.setFloat32(32, +!!y, !0), F.setFloat32(36, Z(a.interactionRadius, .01, .3, .05), !0), F.setFloat32(40, (r - me) / 1e3, !0), F.setUint32(44, +(a.quantity === "temperature"), !0), F.setFloat32(48, Z(a.viscosity, 0, 20, 1), !0), g.queue.writeBuffer(x, 0, N), _.velocityX *= .72, _.velocityY *= .72, l) {
+					let u = Math.round(Z(a.patternSize, 8, 128, 64));
+					u !== c && (c = u, _.queue.writeBuffer(w, 0, te(u, a.seed)));
+					let h = Z((r - _e) / 1e3, 1 / 240, 1 / 30, 1 / 60) * me;
+					_e = r;
+					let g = A.current, v = performance.now() - g.lastMoveTime < 120;
+					if (F.setFloat32(8, h, !0), F.setFloat32(16, g.x, !0), F.setFloat32(20, g.y, !0), F.setFloat32(24, g.velocityX, !0), F.setFloat32(28, g.velocityY, !0), F.setFloat32(32, +!!v, !0), F.setFloat32(36, Z(a.interactionRadius, .01, .3, .05), !0), F.setFloat32(40, (r - fe) / 1e3, !0), F.setUint32(44, +(a.quantity === "temperature"), !0), F.setFloat32(48, Z(a.viscosity, 0, 20, 1), !0), F.setFloat32(52, Z(a.swirlStrength, 0, 3, 1), !0), _.queue.writeBuffer(S, 0, P), g.velocityX *= .72, g.velocityY *= .72, o) {
 						let e = Math.max(1, Math.round(a.pixelScale));
-						f = Math.ceil(l.cssWidth / e), p = Math.ceil(l.cssHeight / e), L.setFloat32(8, e * l.width / l.cssWidth, !0), L.setFloat32(12, e * l.height / l.cssHeight, !0);
+						p = Math.ceil(o.cssWidth / e), m = Math.ceil(o.cssHeight / e), R.setFloat32(8, e * o.width / o.cssWidth, !0), R.setFloat32(12, e * o.height / o.cssHeight, !0);
 					}
-					L.setUint32(0, f, !0), L.setUint32(4, p, !0), L.setUint32(16, s, !0), L.setUint32(20, +(a.quantity === "temperature"), !0), L.setUint32(24, +!!a.invert, !0), L.setFloat32(28, Z(a.contrast, .25, 8, 1), !0);
-					let w = `${a.darkDependency}|${a.lightDependency}`;
-					H.key !== w && (H = {
-						key: w,
-						dark: xe(a.dark),
-						light: xe(a.light)
+					R.setUint32(0, p, !0), R.setUint32(4, m, !0), R.setUint32(16, c, !0), R.setUint32(20, +(a.quantity === "temperature"), !0), R.setUint32(24, +!!a.invert, !0), R.setFloat32(28, Z(a.contrast, .25, 8, 1), !0);
+					let b = `${a.darkDependency}|${a.lightDependency}`;
+					U.key !== b && (U = {
+						key: b,
+						dark: Ce(a.dark),
+						light: Ce(a.light)
 					});
-					let T = new Float32Array(I, 32, 8);
-					T.set(H.dark, 0), T.set(H.light, 4), g.queue.writeBuffer(S, 0, I);
-					let E = g.createCommandEncoder({ label: "Fluid simulation frame" }), D = (e, t, n) => {
+					let T = new Float32Array(L, 32, 8);
+					T.set(U.dark, 0), T.set(U.light, 4), _.queue.writeBuffer(C, 0, L);
+					let E = _.createCommandEncoder({ label: "Fluid simulation frame" }), D = (e, t, n) => {
 						let r = E.beginComputePass({ label: e });
-						r.setPipeline(t), r.setBindGroup(0, n), r.dispatchWorkgroups(Math.ceil(u / 8), Math.ceil(d / 8)), r.end();
+						r.setPipeline(t), r.setBindGroup(0, n), r.dispatchWorkgroups(Math.ceil(d / 8), Math.ceil(f / 8)), r.end();
 					};
-					D("Advect and heat fluid", b.advect, ie), D("Measure fluid divergence", b.divergence, ae);
-					for (let e = 0; e < pe; e += 1) D(`Solve fluid pressure ${e + 1}`, b.solvePressure, oe[e % 2]);
-					D("Project fluid velocity", b.project, se);
-					let A = E.beginRenderPass({
+					D("Advect fluid", x.advect, ae), D("Measure fluid divergence", x.divergence, oe);
+					for (let e = 0; e < he; e += 1) D(`Solve fluid pressure ${e + 1}`, x.solvePressure, se[e % 2]);
+					D("Project fluid velocity", x.project, ce);
+					let O = E.beginRenderPass({
 						label: "Blue-noise fluid display pass",
 						colorAttachments: [{
-							view: v.getCurrentTexture().createView(),
+							view: y.getCurrentTexture().createView(),
 							clearValue: {
 								r: 0,
 								g: 0,
@@ -1306,46 +1314,58 @@ function we({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 							storeOp: "store"
 						}]
 					});
-					A.setPipeline(b.display), A.setBindGroup(0, ce), A.draw(3), A.end(), g.queue.submit([E.finish()]), ge || (ge = !0, g.queue.onSubmittedWorkDone().then(() => {
+					O.setPipeline(x.display), O.setBindGroup(0, le), O.draw(3), O.end(), _.queue.submit([E.finish()]), X || (X = !0, _.queue.onSubmittedWorkDone().then(() => {
 						if (t) return;
-						P("ready");
+						I("ready");
 						let n = {
 							canvas: e,
-							device: g,
-							...R.current ?? c,
-							logicalWidth: f,
-							logicalHeight: p
+							device: _,
+							...B.current ?? l,
+							logicalWidth: p,
+							logicalHeight: m
 						};
-						k.current?.(n);
-					}, i)), n = requestAnimationFrame(ye);
+						j.current?.(n);
+					}, i)), n = requestAnimationFrame(be);
 				} catch (e) {
 					i(e);
 				}
 			};
-			ye(performance.now());
+			be(performance.now());
 		})().catch(i), () => {
-			t = !0, n && cancelAnimationFrame(n), Ce(r);
+			t = !0, n && cancelAnimationFrame(n), Te(r);
 		};
 	}, [
-		u,
-		_,
-		b
+		f,
+		y,
+		S,
+		o
 	]), /* @__PURE__ */ a("canvas", {
-		...E,
-		ref: V,
-		width: j?.width ?? F.width,
-		height: j?.height ?? F.height,
+		...O,
+		ref: U,
+		width: N?.width ?? L.width,
+		height: N?.height ?? L.height,
 		style: {
 			touchAction: "none",
-			...w
+			...E
 		},
-		"aria-label": T,
-		"data-webgpu-status": N
+		"aria-label": D,
+		"data-webgpu-status": F
+	});
+}
+//#endregion
+//#region src/BlueNoisePaint.tsx
+function Oe({ quantity: e = "pigment", viscosity: t = 2, "aria-label": n = "Interactive blue-noise paint in a box", ...r }) {
+	return /* @__PURE__ */ a(De, {
+		...r,
+		setup: "paint",
+		quantity: e === "velocity" ? "velocity" : "temperature",
+		viscosity: t,
+		"aria-label": n
 	});
 }
 //#endregion
 //#region src/leniaSeed.ts
-function Te(e) {
+function ke(e) {
 	let t = [[]], n = "";
 	for (let r = 0; r < e.length; r += 1) {
 		let i = e[r];
@@ -1367,17 +1387,17 @@ function Te(e) {
 	}
 	return t;
 }
-function Ee(e) {
+function Ae(e) {
 	let t = e >>> 0;
 	return () => (t = Math.imul(t, 1664525) + 1013904223 >>> 0, t / 4294967296);
 }
-function De(e, t) {
+function je(e, t) {
 	return Number.isFinite(e) ? Math.min(1, Math.max(0, e)) : t;
 }
-function Oe(e) {
+function Me(e) {
 	return Number.isFinite(e) ? Math.min(3, Math.max(.5, e)) : 1;
 }
-function ke(e, t) {
+function Ne(e, t) {
 	if (t === 1) return e;
 	let n = e.length, r = Math.max(...e.map((e) => e.length)), i = Math.max(1, Math.round(r * t)), a = Math.max(1, Math.round(n * t)), o = (t, n) => e[n]?.[t] ?? 0;
 	return Array.from({ length: a }, (e, t) => Array.from({ length: i }, (e, s) => {
@@ -1385,15 +1405,15 @@ function ke(e, t) {
 		return o(u, d) * (1 - f) * (1 - p) + o(u + 1, d) * f * (1 - p) + o(u, d + 1) * (1 - f) * p + o(u + 1, d + 1) * f * p;
 	}));
 }
-function Ae(e, t) {
+function Pe(e, t) {
 	let n = e.length, r = Math.max(...e.map((e) => e.length)), i = t * Math.PI / 180, a = Math.cos(i), o = Math.sin(i), s = Math.ceil(Math.abs(r * a) + Math.abs(n * o)), c = Math.ceil(Math.abs(r * o) + Math.abs(n * a)), l = (r - 1) / 2, u = (n - 1) / 2, d = (s - 1) / 2, f = (c - 1) / 2, p = (t, n) => e[n]?.[t] ?? 0;
 	return Array.from({ length: c }, (e, t) => Array.from({ length: s }, (e, n) => {
 		let r = n - d, i = t - f, s = a * r + o * i + l, c = -o * r + a * i + u, m = Math.floor(s), h = Math.floor(c), g = s - m, _ = c - h;
 		return p(m, h) * (1 - g) * (1 - _) + p(m + 1, h) * g * (1 - _) + p(m, h + 1) * (1 - g) * _ + p(m + 1, h + 1) * g * _;
 	}));
 }
-function je(e, t, n, r, i, a, o = 1) {
-	let s = new Float32Array(e * t), c = ke(Te(n.cells), Oe(o)), l = Ee(r), u = Math.floor(l() * 4) * 90, d = Math.min(e, t) >= 64 ? [
+function Fe(e, t, n, r, i, a, o = 1) {
+	let s = new Float32Array(e * t), c = Ne(ke(n.cells), Me(o)), l = Ae(r), u = Math.floor(l() * 4) * 90, d = Math.min(e, t) >= 64 ? [
 		{
 			anchor: "normalized",
 			x: .2,
@@ -1419,7 +1439,7 @@ function je(e, t, n, r, i, a, o = 1) {
 		rotation: u
 	}], f = i?.placements ?? d;
 	for (let [n, r] of f.entries()) {
-		let o = Ae(c, r.rotation), u = o[0]?.length ?? 0, d = o.length, f = i ? 0 : .05, p = n === 0 ? a : void 0, m = De(p?.x ?? r.x, .5) + (l() - .5) * f, h = De(p?.y ?? r.y, .5) + (l() - .5) * f, g = r.margin ?? 0, _ = r.anchor === "bottom-right" && !p ? e - u - g : Math.round(m * e - u / 2), v = r.anchor === "bottom-right" && !p ? t - d - g : Math.round(h * t - d / 2), y = Math.max(0, e - u), b = Math.max(0, t - d), x = Math.min(g, y), S = Math.min(g, b), C = Math.max(x, y - g), w = Math.max(S, b - g), T = Math.min(C, Math.max(x, _)), E = Math.min(w, Math.max(S, v));
+		let o = Pe(c, r.rotation), u = o[0]?.length ?? 0, d = o.length, f = i ? 0 : .05, p = n === 0 ? a : void 0, m = je(p?.x ?? r.x, .5) + (l() - .5) * f, h = je(p?.y ?? r.y, .5) + (l() - .5) * f, g = r.margin ?? 0, _ = r.anchor === "bottom-right" && !p ? e - u - g : Math.round(m * e - u / 2), v = r.anchor === "bottom-right" && !p ? t - d - g : Math.round(h * t - d / 2), y = Math.max(0, e - u), b = Math.max(0, t - d), x = Math.min(g, y), S = Math.min(g, b), C = Math.max(x, y - g), w = Math.max(S, b - g), T = Math.min(C, Math.max(x, _)), E = Math.min(w, Math.max(S, v));
 		for (let n = 0; n < d; n += 1) {
 			let r = o[n];
 			for (let i = 0; i < u; i += 1) {
@@ -1434,10 +1454,10 @@ function je(e, t, n, r, i, a, o = 1) {
 }
 //#endregion
 //#region src/leniaPresets.ts
-function Me(...e) {
+function Ie(...e) {
 	return e.join("$");
 }
-var Ne = [
+var Le = [
 	{
 		id: "orbium-unicaudatus",
 		name: "Orbium unicaudatus",
@@ -1448,7 +1468,7 @@ var Ne = [
 		kernelPeaks: [1],
 		kernelCore: "bump4",
 		growthFunction: "gaussian",
-		cells: Me("7.MD6.qL", "6.pKqEqFURpApBRAqQ", "5.VqTrSsBrOpXpWpTpWpUpCrQ", "4.CQrQsTsWsApITNPpGqGvL", "3.IpIpWrOsGsBqXpJ4.LsFrL", "A.DpKpSpJpDqOqUqSqE5.ExD", "qL.pBpTT2.qCrGrVrWqM5.sTpP", ".pGpWpD3.qUsMtItQtJ6.tL", ".uFqGH3.pXtOuR2vFsK5.sM", ".tUqL4.GuNwAwVxBwNpC4.qXpA", "2.uH5.vBxGyEyMyHtW4.qIpL", "2.wV5.tIyG3yOxQqW2.FqHpJ", "2.tUS4.rM2yOyJyOyHtVpPMpFqNV", "2.HsR4.pUxAyOxLxDxEuVrMqBqGqKJ", "3.sLpE3.pEuNxHwRwGvUuLsHrCqTpR", "3.TrMS2.pFsLvDvPvEuPtNsGrGqIP", "4.pRqRpNpFpTrNtGtVtStGsMrNqNpF", "5.pMqKqLqRrIsCsLsIrTrFqJpHE", "6.RpSqJqPqVqWqRqKpRXE", "8.OpBpIpJpFTK")
+		cells: Ie("7.MD6.qL", "6.pKqEqFURpApBRAqQ", "5.VqTrSsBrOpXpWpTpWpUpCrQ", "4.CQrQsTsWsApITNPpGqGvL", "3.IpIpWrOsGsBqXpJ4.LsFrL", "A.DpKpSpJpDqOqUqSqE5.ExD", "qL.pBpTT2.qCrGrVrWqM5.sTpP", ".pGpWpD3.qUsMtItQtJ6.tL", ".uFqGH3.pXtOuR2vFsK5.sM", ".tUqL4.GuNwAwVxBwNpC4.qXpA", "2.uH5.vBxGyEyMyHtW4.qIpL", "2.wV5.tIyG3yOxQqW2.FqHpJ", "2.tUS4.rM2yOyJyOyHtVpPMpFqNV", "2.HsR4.pUxAyOxLxDxEuVrMqBqGqKJ", "3.sLpE3.pEuNxHwRwGvUuLsHrCqTpR", "3.TrMS2.pFsLvDvPvEuPtNsGrGqIP", "4.pRqRpNpFpTrNtGtVtStGsMrNqNpF", "5.pMqKqLqRrIsCsLsIrTrFqJpHE", "6.RpSqJqPqVqWqRqKpRXE", "8.OpBpIpJpFTK")
 	},
 	{
 		id: "orbium-bicaudatus",
@@ -1460,7 +1480,7 @@ var Ne = [
 		kernelPeaks: [1],
 		kernelCore: "bump4",
 		growthFunction: "gaussian",
-		cells: Me("13.pK", "14.qV", "6.VpA.MpEpKpITqV", "4.BpPpNrIrEqDpWpOpLpUqNvT", "4.IqRrNsPsKqHJ3.GqOuC", "4.TrLsTrPrLpS6.uUD", "3.SpWqNrBqLpRqPqE6.vA", "2.FpTpMLpHqPqHrVsPrS5.qUqA", "K.pCpRG.ErFsRsVuSuPqN4.CrR", "pA.pTU3.rWuBuRvXwTwKpF4.rCH", ".tPqHH3.qFvAwUwVyJyKwNL2.DqLR", ".pGsGA4.vPxSyDxE2yOuHS.XqJT", "2.xIE4.sCyHyOvLvRyFxCsGpVpXqGP", "2.VsU4.DxQyOvVuSwDwQuBrMqSqCF", "3.vG5.tEyKwVvIvKvMtVrXqTpM", "4.sU4.qFvDwMvNuUuDsUrKqDO", "4.qCrDJ2.pPsKuGuHtOsQrNqKpC", "5.pTqTpVpNqFrJsGsKrVrDqFpFD", "6.QqCqJqPqVqXqRqHpOTC", "8.LWpFpEXPG")
+		cells: Ie("13.pK", "14.qV", "6.VpA.MpEpKpITqV", "4.BpPpNrIrEqDpWpOpLpUqNvT", "4.IqRrNsPsKqHJ3.GqOuC", "4.TrLsTrPrLpS6.uUD", "3.SpWqNrBqLpRqPqE6.vA", "2.FpTpMLpHqPqHrVsPrS5.qUqA", "K.pCpRG.ErFsRsVuSuPqN4.CrR", "pA.pTU3.rWuBuRvXwTwKpF4.rCH", ".tPqHH3.qFvAwUwVyJyKwNL2.DqLR", ".pGsGA4.vPxSyDxE2yOuHS.XqJT", "2.xIE4.sCyHyOvLvRyFxCsGpVpXqGP", "2.VsU4.DxQyOvVuSwDwQuBrMqSqCF", "3.vG5.tEyKwVvIvKvMtVrXqTpM", "4.sU4.qFvDwMvNuUuDsUrKqDO", "4.qCrDJ2.pPsKuGuHtOsQrNqKpC", "5.pTqTpVpNqFrJsGsKrVrDqFpFD", "6.QqCqJqPqVqXqRqHpOTC", "8.LWpFpEXPG")
 	},
 	{
 		id: "gyrorbium-gyrans",
@@ -1472,7 +1492,7 @@ var Ne = [
 		kernelPeaks: [1],
 		kernelCore: "bump4",
 		growthFunction: "gaussian",
-		cells: Me("10.EL2QLE", "7.TpU2qHqCpXpUpNpFL", "4.JrVtTuKuPuKtLrXqTqHqCpPpDG", "3.qWtDqRpKqEsMuXvBtGrApXpUpSpIO", "2.rQrN4.pAuAvRtTrIpUpIpKpFO", ".pSsM6.tJwFuNsPsFrVpPpDL", ".uFB6.tJ2yO2yLyOyDsKL", "pDuC6.pFxW3yOwIwD2xPqH", "rNtV5.EsMxCyIyOwXtJsMtJwFuX", "sHuSV3.EpDvOwFxEwQsRqR2qHsFvWE", "rQvJsWpPQpKpSqCvEvBuCpD3.BpDtGrQ", "pXuKvMuPtLsWsCrIuCtBrS6.qWrQ", "EsKvEwXyBwLtVrVsCrDqH6.pXrG", ".qHtVxJyOwQrQpNqJpPV6.qJqE", ".JsUxMyOrX10.pFqRJ", "2.rQxPwIpI9.pKqJT", "2.qJxEuPpKB7.qCpP", "2.EvOvMpPO5.TrGqH", "3.sCyOqEpIOEBOqHqEsRtG", "4.xMsMqJqCpXqJqRpIqOuCtBsF", "5.xPrAqTqMpSE.rSsMrLqRqHV.TpS", "6.vErDE2.VpPB", "7.pIrNqHpKQ")
+		cells: Ie("10.EL2QLE", "7.TpU2qHqCpXpUpNpFL", "4.JrVtTuKuPuKtLrXqTqHqCpPpDG", "3.qWtDqRpKqEsMuXvBtGrApXpUpSpIO", "2.rQrN4.pAuAvRtTrIpUpIpKpFO", ".pSsM6.tJwFuNsPsFrVpPpDL", ".uFB6.tJ2yO2yLyOyDsKL", "pDuC6.pFxW3yOwIwD2xPqH", "rNtV5.EsMxCyIyOwXtJsMtJwFuX", "sHuSV3.EpDvOwFxEwQsRqR2qHsFvWE", "rQvJsWpPQpKpSqCvEvBuCpD3.BpDtGrQ", "pXuKvMuPtLsWsCrIuCtBrS6.qWrQ", "EsKvEwXyBwLtVrVsCrDqH6.pXrG", ".qHtVxJyOwQrQpNqJpPV6.qJqE", ".JsUxMyOrX10.pFqRJ", "2.rQxPwIpI9.pKqJT", "2.qJxEuPpKB7.qCpP", "2.EvOvMpPO5.TrGqH", "3.sCyOqEpIOEBOqHqEsRtG", "4.xMsMqJqCpXqJqRpIqOuCtBsF", "5.xPrAqTqMpSE.rSsMrLqRqHV.TpS", "6.vErDE2.VpPB", "7.pIrNqHpKQ")
 	},
 	{
 		id: "tricircium-inversus",
@@ -1484,9 +1504,9 @@ var Ne = [
 		kernelPeaks: [1, 1 / 3],
 		kernelCore: "quad4",
 		growthFunction: "quad4",
-		cells: Me("6.VrQ2tJrQT", "5.sUxH3yOxWuUpU", "4.tOyG7yOqW", "3.rDxC9yOxR", "3.tD3yOxRwLwAwDwX4yO", "3.vW2yOwSuXuKuFtTtB2.vO2yO", "3.2yOxPuItO2tQtB4.E2yO", "2.pI2yOuFLrDtGuCtO5.yB2yOB", "2.wLyOvT3.qWyGxPqO4.qJ2yOvRpA", "2.2yO4.pPtVvMrVqO3.rQxR2yOuFJ", "2.2yO4.pFsPuCtOsHtL.qWtQwI2yOxRrN", "2.2yO4.pSsRtVuCvTyOuStQuCvT3yOtV", ".qE2yOqH3.pDtVtLsWtQyGuKtVuIvW3yOuN", ".sR2yOwDrXqErQtJqOqMpPpKJsRtLuKwQ3yOtO", "OuF2yOxEuItLtJtLqC5.tGvByG3yOrA", "pDvO2yOyDvMuItTtD6.uAxJ3yOvO", "OvR3yOxEvJuNtT6.yG2yOyBvRqH", ".tV4yOxRwSwDvG3.pD3yOxRsMpK", ".pXxE13yOqH", "2.rSxP9yOvR", "3.rAvTyByIxRxHuUrG", "4.JqTsHsCqH")
+		cells: Ie("6.VrQ2tJrQT", "5.sUxH3yOxWuUpU", "4.tOyG7yOqW", "3.rDxC9yOxR", "3.tD3yOxRwLwAwDwX4yO", "3.vW2yOwSuXuKuFtTtB2.vO2yO", "3.2yOxPuItO2tQtB4.E2yO", "2.pI2yOuFLrDtGuCtO5.yB2yOB", "2.wLyOvT3.qWyGxPqO4.qJ2yOvRpA", "2.2yO4.pPtVvMrVqO3.rQxR2yOuFJ", "2.2yO4.pFsPuCtOsHtL.qWtQwI2yOxRrN", "2.2yO4.pSsRtVuCvTyOuStQuCvT3yOtV", ".qE2yOqH3.pDtVtLsWtQyGuKtVuIvW3yOuN", ".sR2yOwDrXqErQtJqOqMpPpKJsRtLuKwQ3yOtO", "OuF2yOxEuItLtJtLqC5.tGvByG3yOrA", "pDvO2yOyDvMuItTtD6.uAxJ3yOvO", "OvR3yOxEvJuNtT6.yG2yOyBvRqH", ".tV4yOxRwSwDvG3.pD3yOxRsMpK", ".pXxE13yOqH", "2.rSxP9yOvR", "3.rAvTyByIxRxHuUrG", "4.JqTsHsCqH")
 	}
-], Pe = "orbium-unicaudatus", Fe = [{
+], Re = "orbium-unicaudatus", ze = [{
 	id: "orbium-unicaudatus-solo-up",
 	name: "Solo upward Orbium",
 	species: "orbium-unicaudatus",
@@ -1506,29 +1526,29 @@ var Ne = [
 		rotation: 0,
 		margin: 2
 	}]
-}], Ie = new Map(Ne.map((e) => [e.id, e])), Le = new Map(Fe.map((e) => [e.id, e]));
-function Re(e) {
-	return Ie.get(e) ?? Ne[0];
+}], Be = new Map(Le.map((e) => [e.id, e])), Ve = new Map(ze.map((e) => [e.id, e]));
+function He(e) {
+	return Be.get(e) ?? Le[0];
 }
-function ze(e) {
-	return Le.get(e) ?? Fe[0];
+function Ue(e) {
+	return Ve.get(e) ?? ze[0];
 }
 //#endregion
 //#region src/BlueNoiseLenia.tsx
-var Be = 1e3 / 60, Ve = 250, He = [
+var We = 1e3 / 60, Ge = 250, Ke = [
 	0,
 	0,
 	0,
 	1
-], Ue = [
+], qe = [
 	1,
 	1,
 	1,
 	1
-], Q, We = /* @__PURE__ */ new WeakMap();
-function Ge(e, t) {
-	let n = We.get(e);
-	n || (n = /* @__PURE__ */ new Map(), We.set(e, n));
+], Q, Je = /* @__PURE__ */ new WeakMap();
+function Ye(e, t) {
+	let n = Je.get(e);
+	n || (n = /* @__PURE__ */ new Map(), Je.set(e, n));
 	let r = n.get(t);
 	return r || (r = (async () => {
 		let [n, r] = await Promise.all([g(e, "Lenia simulation WGSL", d), g(e, "Blue-noise Lenia WGSL", f)]), i = e.createBindGroupLayout({
@@ -1610,23 +1630,23 @@ function Ge(e, t) {
 function $(e, t, n, r) {
 	return Number.isFinite(e) ? Math.min(n, Math.max(t, e)) : r;
 }
-function Ke(e, t) {
+function Xe(e, t) {
 	return Math.max(1, Math.round(Number.isFinite(e) ? e : t));
 }
-function qe(e, t) {
+function Ze(e, t) {
 	if (e !== void 0 && t !== void 0) return {
-		width: Ke(e, 900),
-		height: Ke(t, 600)
+		width: Xe(e, 900),
+		height: Xe(t, 600)
 	};
 	if (e !== void 0) {
-		let t = Ke(e, 900);
+		let t = Xe(e, 900);
 		return {
 			width: t,
 			height: Math.max(1, Math.round(t * 2 / 3))
 		};
 	}
 	if (t !== void 0) {
-		let e = Ke(t, 600);
+		let e = Xe(t, 600);
 		return {
 			width: Math.max(1, Math.round(e * 3 / 2)),
 			height: e
@@ -1637,7 +1657,7 @@ function qe(e, t) {
 		height: 600
 	};
 }
-function Je(e) {
+function Qe(e) {
 	let t = e.trim();
 	if (!Q) {
 		let e = document.createElement("canvas");
@@ -1656,26 +1676,26 @@ function Je(e) {
 		o / 255
 	];
 }
-function Ye(e) {
-	return typeof e == "string" ? Je(e) : [
+function $e(e) {
+	return typeof e == "string" ? Qe(e) : [
 		$(e[0], 0, 1, 0),
 		$(e[1], 0, 1, 0),
 		$(e[2], 0, 1, 0),
 		$(e[3] ?? 1, 0, 1, 1)
 	];
 }
-function Xe(e) {
+function et(e) {
 	return typeof e == "string" ? `css:${e}` : `tuple:${e.join(",")}`;
 }
-function Ze(e) {
+function tt(e) {
 	e?.parameters.destroy(), e?.pattern.destroy(), e?.initialState.destroy(), e?.stateA.destroy(), e?.stateB.destroy();
 }
-function Qe({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simulationSize: u = 256, species: d = Pe, preset: f, position: p, spatialScale: m = 1, dither: g = !0, interactionRadius: _ = .05, contrast: v = 1, invert: y = !1, seed: b = 1592594996, dark: x = He, light: S = Ue, powerPreference: C = "high-performance", onReady: w, onError: T, ref: E, style: D, "aria-label": O = "Interactive blue-noise Lenia automaton", ...k }) {
+function nt({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simulationSize: u = 256, species: d = Re, preset: f, position: p, spatialScale: m = 1, dither: g = !0, interactionRadius: _ = .05, contrast: v = 1, invert: y = !1, seed: b = 1592594996, dark: x = Ke, light: S = qe, powerPreference: C = "high-performance", onReady: w, onError: T, ref: E, style: D, "aria-label": O = "Interactive blue-noise Lenia automaton", ...k }) {
 	let A = r(null), j = r({
 		x: .5,
 		y: .5,
 		lastMoveTime: -Infinity
-	}), M = r(w), N = r(T), [P, F] = i(), [I, L] = i("loading"), R = qe(o, s), z = Xe(x), B = Xe(S);
+	}), M = r(w), N = r(T), [P, F] = i(), [I, L] = i("loading"), R = Ze(o, s), z = et(x), B = et(S);
 	M.current = w, N.current = T;
 	let V = r(void 0), H = r({
 		pixelScale: c,
@@ -1717,7 +1737,7 @@ function Qe({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 	};
 	let U = r(R);
 	U.current = R;
-	let W = e((e) => {
+	let ee = e((e) => {
 		A.current = e, typeof E == "function" ? E(e) : E && (E.current = e);
 	}, [E]);
 	return t(() => {
@@ -1764,16 +1784,16 @@ function Qe({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 		let t = !1, n = 0, r;
 		L("loading");
 		let i = (e) => {
-			t || (t = !0, n && cancelAnimationFrame(n), Ze(r), r = void 0, L("error"), N.current?.(e instanceof Error ? e : Error(String(e))));
+			t || (t = !0, n && cancelAnimationFrame(n), tt(r), r = void 0, L("error"), N.current?.(e instanceof Error ? e : Error(String(e))));
 		};
 		return (async () => {
-			let a = H.current, o = a.preset ? ze(a.preset) : void 0, s = Re(o?.species ?? a.species), c = Oe(a.spatialScale), l = Math.round($(a.simulationSize, 64, 384, 256)), u = Math.round($(a.patternSize, 8, 128, 64)), d = V.current ?? {
+			let a = H.current, o = a.preset ? Ue(a.preset) : void 0, s = He(o?.species ?? a.species), c = Me(a.spatialScale), l = Math.round($(a.simulationSize, 64, 384, 256)), u = Math.round($(a.patternSize, 8, 128, 64)), d = V.current ?? {
 				width: e.width,
 				height: e.height,
 				cssWidth: e.clientWidth || U.current.width,
 				cssHeight: e.clientHeight || U.current.height,
 				devicePixelRatio: window.devicePixelRatio || 1
-			}, f = d.cssWidth / d.cssHeight, p = f >= 1 ? l : Math.max(24, Math.round(l * f)), m = f >= 1 ? Math.max(24, Math.round(l / f)) : l, g = Math.ceil(d.cssWidth / Math.max(1, Math.round(a.pixelScale))), _ = Math.ceil(d.cssHeight / Math.max(1, Math.round(a.pixelScale))), v = ee(u, a.seed), y = await h(a.powerPreference);
+			}, f = d.cssWidth / d.cssHeight, p = f >= 1 ? l : Math.max(24, Math.round(l * f)), m = f >= 1 ? Math.max(24, Math.round(l / f)) : l, g = Math.ceil(d.cssWidth / Math.max(1, Math.round(a.pixelScale))), _ = Math.ceil(d.cssHeight / Math.max(1, Math.round(a.pixelScale))), v = te(u, a.seed), y = await h(a.powerPreference);
 			if (t) return;
 			let b = y.limits.maxTextureDimension2D;
 			if (d.width > b || d.height > b || p > b || m > b) throw Error(`The output or simulation exceeds this device's ${b}px texture limit.`);
@@ -1785,7 +1805,7 @@ function Qe({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 				format: S,
 				alphaMode: "premultiplied"
 			});
-			let C = await Ge(y, S);
+			let C = await Ye(y, S);
 			if (t) return;
 			let w = y.createBuffer({
 				label: "Lenia parameters",
@@ -1795,7 +1815,7 @@ function Qe({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 				label: "Tileable blue-noise ranks",
 				size: 65536,
 				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-			}), E = je(p, m, s, a.seed, o, a.position, c), D = y.createBuffer({
+			}), E = Fe(p, m, s, a.seed, o, a.position, c), D = y.createBuffer({
 				label: `${s.name} initial state`,
 				size: E.byteLength,
 				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
@@ -1855,7 +1875,7 @@ function Qe({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 						resource: { buffer: D }
 					}
 				]
-			}), W = (e, t, n) => y.createBindGroup({
+			}), ee = (e, t, n) => y.createBindGroup({
 				label: e,
 				layout: C.display.getBindGroupLayout(0),
 				entries: [
@@ -1880,13 +1900,13 @@ function Qe({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 						resource: n
 					}
 				]
-			}), G = B("Initialize Lenia state", R, z), K = [B("Step Lenia A to B", R, z), B("Step Lenia B to A", z, R)], q = [W("Display Lenia state A", R, z), W("Display Lenia state B", z, R)], J = y.createCommandEncoder({ label: "Initialize Lenia" }), Y = J.beginComputePass();
-			Y.setPipeline(C.initialize), Y.setBindGroup(0, G), Y.dispatchWorkgroups(Math.ceil(p / 8), Math.ceil(m / 8)), Y.end(), y.queue.submit([J.finish()]);
-			let te = {
+			}), W = B("Initialize Lenia state", R, z), G = [B("Step Lenia A to B", R, z), B("Step Lenia B to A", z, R)], K = [ee("Display Lenia state A", R, z), ee("Display Lenia state B", z, R)], q = y.createCommandEncoder({ label: "Initialize Lenia" }), J = q.beginComputePass();
+			J.setPipeline(C.initialize), J.setBindGroup(0, W), J.dispatchWorkgroups(Math.ceil(p / 8), Math.ceil(m / 8)), J.end(), y.queue.submit([q.finish()]);
+			let Y = {
 				key: `${a.darkDependency}|${a.lightDependency}`,
-				dark: Ye(a.dark),
-				light: Ye(a.light)
-			}, ne = performance.now(), re = ne - Be, ie = ne - Ve, ae = !1, oe = 1, se = (e, t) => {
+				dark: $e(a.dark),
+				light: $e(a.light)
+			}, ne = performance.now(), re = ne - We, ie = ne - Ge, ae = !1, oe = 1, se = (e, t) => {
 				let n = oe === 0 ? R : z, i = y.createTexture({
 					label: "Lenia state A",
 					size: [e, t],
@@ -1900,17 +1920,17 @@ function Qe({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 				}), o = i.createView(), s = a.createView();
 				F.setUint32(0, e, !0), F.setUint32(4, t, !0), y.queue.writeBuffer(w, 0, P);
 				let c = B("Resample Lenia state", n, o), l = y.createCommandEncoder({ label: "Resample Lenia state" }), u = l.beginComputePass();
-				u.setPipeline(C.resample), u.setBindGroup(0, c), u.dispatchWorkgroups(Math.ceil(e / 8), Math.ceil(t / 8)), u.end(), y.queue.submit([l.finish()]), k.destroy(), A.destroy(), k = i, A = a, R = o, z = s, r && (r.stateA = i, r.stateB = a), p = e, m = t, K = [B("Step Lenia A to B", R, z), B("Step Lenia B to A", z, R)], q = [W("Display Lenia state A", R, z), W("Display Lenia state B", z, R)], oe = 0;
+				u.setPipeline(C.resample), u.setBindGroup(0, c), u.dispatchWorkgroups(Math.ceil(e / 8), Math.ceil(t / 8)), u.end(), y.queue.submit([l.finish()]), k.destroy(), A.destroy(), k = i, A = a, R = o, z = s, r && (r.stateA = i, r.stateB = a), p = e, m = t, G = [B("Step Lenia A to B", R, z), B("Step Lenia B to A", z, R)], K = [ee("Display Lenia state A", R, z), ee("Display Lenia state B", z, R)], oe = 0;
 			}, ce = (r) => {
 				if (t) return;
 				let a = r - re;
-				if (a < Be) {
+				if (a < We) {
 					n = requestAnimationFrame(ce);
 					return;
 				}
-				re = r - a % Be;
-				let o = r - ie, s = o >= Ve, c = Math.min(1, o / Ve);
-				s && (ie = r - o % Ve, c = 0);
+				re = r - a % We;
+				let o = r - ie, s = o >= Ge, c = Math.min(1, o / Ge);
+				s && (ie = r - o % Ge, c = 0);
 				try {
 					let r = H.current, a = V.current;
 					if (a && a.cssWidth > 0 && a.cssHeight > 0) {
@@ -1918,7 +1938,7 @@ function Qe({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 						(t !== p || n !== m) && se(t, n);
 					}
 					let o = Math.round($(r.patternSize, 8, 128, 64));
-					o !== u && (u = o, F.setUint32(72, u, !0), y.queue.writeBuffer(T, 0, ee(o, r.seed)));
+					o !== u && (u = o, F.setUint32(72, u, !0), y.queue.writeBuffer(T, 0, te(o, r.seed)));
 					let f = j.current, h = performance.now() - f.lastMoveTime < 120;
 					if (F.setFloat32(16, f.x, !0), F.setFloat32(20, f.y, !0), F.setFloat32(24, +!!h, !0), F.setFloat32(28, $(r.interactionRadius, .005, .3, .05), !0), F.setFloat32(32, c, !0), a) {
 						let e = Math.max(1, Math.round(r.pixelScale));
@@ -1926,17 +1946,17 @@ function Qe({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 					}
 					F.setUint32(56, g, !0), F.setUint32(60, _, !0), F.setUint32(72, u, !0), F.setFloat32(44, $(r.contrast, .25, 8, 1), !0), F.setUint32(48, +!!r.invert, !0), F.setUint32(76, I | (r.dither ? 0 : 1024), !0);
 					let v = `${r.darkDependency}|${r.lightDependency}`;
-					te.key !== v && (te = {
+					Y.key !== v && (Y = {
 						key: v,
-						dark: Ye(r.dark),
-						light: Ye(r.light)
+						dark: $e(r.dark),
+						light: $e(r.light)
 					});
 					let b = new Float32Array(P, 80, 8);
-					b.set(te.dark, 0), b.set(te.light, 4), y.queue.writeBuffer(w, 0, P);
+					b.set(Y.dark, 0), b.set(Y.light, 4), y.queue.writeBuffer(w, 0, P);
 					let S = y.createCommandEncoder({ label: "Lenia frame" });
 					if (s) {
 						let e = S.beginComputePass({ label: "Step Lenia automaton" });
-						e.setPipeline(C.step), e.setBindGroup(0, K[oe]), e.dispatchWorkgroups(Math.ceil(p / 8), Math.ceil(m / 8)), e.end(), oe = 1 - oe;
+						e.setPipeline(C.step), e.setBindGroup(0, G[oe]), e.dispatchWorkgroups(Math.ceil(p / 8), Math.ceil(m / 8)), e.end(), oe = 1 - oe;
 					}
 					let E = S.beginRenderPass({
 						label: "Blue-noise Lenia display pass",
@@ -1952,7 +1972,7 @@ function Qe({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 							storeOp: "store"
 						}]
 					});
-					E.setPipeline(C.display), E.setBindGroup(0, q[oe]), E.draw(3), E.end(), y.queue.submit([S.finish()]), ae || (ae = !0, y.queue.onSubmittedWorkDone().then(() => {
+					E.setPipeline(C.display), E.setBindGroup(0, K[oe]), E.draw(3), E.end(), y.queue.submit([S.finish()]), ae || (ae = !0, y.queue.onSubmittedWorkDone().then(() => {
 						if (t) return;
 						L("ready");
 						let n = {
@@ -1970,7 +1990,7 @@ function Qe({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 			};
 			ce(performance.now());
 		})().catch(i), () => {
-			t = !0, n && cancelAnimationFrame(n), Ze(r);
+			t = !0, n && cancelAnimationFrame(n), tt(r);
 		};
 	}, [
 		u,
@@ -1983,7 +2003,7 @@ function Qe({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 		C
 	]), /* @__PURE__ */ a("canvas", {
 		...k,
-		ref: W,
+		ref: ee,
 		width: P?.width ?? R.width,
 		height: P?.height ?? R.height,
 		style: {
@@ -1995,4 +2015,4 @@ function Qe({ width: o, height: s, pixelScale: c = 2, patternSize: l = 64, simul
 	});
 }
 //#endregion
-export { we as BlueNoiseFluid, Qe as BlueNoiseLenia, ue as BlueNoiseWave, Pe as DEFAULT_LENIA_SPECIES, F as FloydSteinberg, Fe as LENIA_SCENE_PRESETS, Ne as LENIA_SPECIES_PRESETS, s as displayShader, o as floydSteinbergShader, ze as getLeniaScenePreset, Re as getLeniaSpeciesPreset, S as isWebGpuSupported };
+export { Ee as BlueNoiseFluid, nt as BlueNoiseLenia, Oe as BlueNoisePaint, ue as BlueNoiseWave, Re as DEFAULT_LENIA_SPECIES, F as FloydSteinberg, ze as LENIA_SCENE_PRESETS, Le as LENIA_SPECIES_PRESETS, s as displayShader, o as floydSteinbergShader, Ue as getLeniaScenePreset, He as getLeniaSpeciesPreset, S as isWebGpuSupported };
