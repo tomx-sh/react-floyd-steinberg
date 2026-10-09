@@ -195,8 +195,10 @@ import { BlueNoiseInk } from "react-floyd-steinberg";
   width={960}
   height={540}
   simulationSize={128}
+  simulationSpeed={0.6}
+  viscosity={20}
   pixelScale={2}
-  contrast={1}
+  contrast={1.75}
   dark="black"
   light="white"
   style={{ width: "100%", height: "auto" }}
@@ -209,8 +211,14 @@ resizing preserves the fluid. `simulationSize` sets the longest velocity-grid
 dimension (`32…384`, default `128`), and dye stays four times finer on each axis.
 The default canvas is `960 × 540`. `interactionRadius` defaults to `sqrt(0.002)`
 in canvas-height units. It accepts the common canvas, color, seed, sizing,
-contrast, inversion, pattern, and callback props, with no `quantity` or
-`viscosity` modes. Display controls update without resetting the simulation;
+contrast, inversion, pattern, and callback props, with no `quantity` mode.
+`simulationSpeed` scales simulated time independently of rendering (`0…2`,
+default `0.6`): `0.5` gives half-speed motion, and `0` pauses the fluid. Advection,
+emitter motion, forces, diffusion, and decay use the same scaled simulation
+clock. `viscosity` controls local velocity diffusion (`0…20`, default `20`),
+smoothing neighboring velocities and suppressing fine turbulence. Both props
+update live without resetting the fluid. Contrast defaults to `1.75`.
+Display controls also update live;
 changing `simulationSize` or `seed` restarts it. Hidden tabs pause the simulation.
 Open `#/blue-noise-ink` in the playground to try it.
 

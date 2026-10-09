@@ -13,6 +13,14 @@ export interface BlueNoiseInkProps extends Omit<BlueNoiseFluidProps, "quantity" 
   simulationSize?: number;
   /** Pointer splat radius in normalized canvas-height units. Defaults to sqrt(0.002). */
   interactionRadius?: number;
+  /** Contrast before dithering. Defaults to 1.75; clamped to 0.25–8. */
+  contrast?: number;
+  /** Simulated time per real-time second. Defaults to 0.6; clamped to 0–2.
+   * 0 pauses the fluid while rendering continues; 0.5 gives half-speed motion. */
+  simulationSpeed?: number;
+  /** Velocity diffusion strength. Defaults to 20; clamped to 0–20.
+   * Higher values smooth neighboring velocities and suppress fine turbulence. */
+  viscosity?: number;
 }
 
 interface CanvasSize {
@@ -30,8 +38,10 @@ export function BlueNoiseInk({
   pixelScale = 2,
   patternSize = 64,
   simulationSize = 128,
+  simulationSpeed = 0.6,
+  viscosity = 20,
   interactionRadius = Math.sqrt(0.002),
-  contrast = 1,
+  contrast = 1.75,
   invert = false,
   seed = 0x5eed1234,
   dark = "black",
@@ -52,8 +62,8 @@ export function BlueNoiseInk({
   const intrinsicHeight = positiveInteger(height, intrinsicWidth * 9 / 16);
   const callbacks = useRef({ onReady, onError });
   callbacks.current = { onReady, onError };
-  const propsRef = useRef({ pixelScale, patternSize, interactionRadius, contrast, invert, seed, dark, light });
-  propsRef.current = { pixelScale, patternSize, interactionRadius, contrast, invert, seed, dark, light };
+  const propsRef = useRef({ pixelScale, patternSize, interactionRadius, simulationSpeed, viscosity, contrast, invert, seed, dark, light });
+  propsRef.current = { pixelScale, patternSize, interactionRadius, simulationSpeed, viscosity, contrast, invert, seed, dark, light };
   const assignRef = useCallback((node: HTMLCanvasElement | null) => {
     canvasRef.current = node;
     if (typeof ref === "function") ref(node);
@@ -187,12 +197,12 @@ export function BlueNoiseInk({
           display.setFloat32(12, scale * size.height / size.cssHeight, true);
           display.setUint32(16, currentPatternSize, true);
           display.setUint32(20, props.invert ? 1 : 0, true);
-          display.setFloat32(24, clamp(props.contrast, 0.25, 8, 1), true);
+          display.setFloat32(24, clamp(props.contrast, 0.25, 8, 1.75), true);
           device.queue.writeBuffer(simulation.displayParameters, 0, displayData);
           accumulator += elapsed;
           let steps = 0;
           while (accumulator >= 1 / 60 && steps < 2) {
-            simulation.step(pointer, props.interactionRadius);
+            simulation.step(pointer, props.interactionRadius, props.simulationSpeed, props.viscosity);
             accumulator -= 1 / 60;
             steps++;
           }

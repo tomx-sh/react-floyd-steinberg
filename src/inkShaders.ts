@@ -1,5 +1,5 @@
 // Adapted from https://vgpu.sh/examples/fluid; MIT, Copyright (c) 2025 Vercel, Inc.
-// See THIRD_PARTY_NOTICES.md. Physics constants and pass order follow the source.
+// See THIRD_PARTY_NOTICES.md. Adds adjustable speed and diffusion to the reference physics.
 
 const common = /* wgsl */ `struct Grid {
   size: vec2u,
@@ -7,7 +7,7 @@ const common = /* wgsl */ `struct Grid {
 }
 
 struct Input {
-  step: u32,
+  time: f32,
   pointer_active: f32,
   pointer_from: vec2f,
   pointer_to: vec2f,
@@ -15,6 +15,9 @@ struct Input {
   idle_a: vec4f,
   idle_b: vec4f,
   pointer_radius_squared: f32,
+  delta_time: f32,
+  viscosity: f32,
+  step_scale: f32,
 }
 
 fn index_of(p: vec2i, size: vec2u) -> u32 {
@@ -124,14 +127,14 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
   let cell = vec2i(id.xy);
   let p = cell_uv(cell, grid.size);
   let aspect = f32(grid.size.x) / f32(grid.size.y);
-  let dt = 1.0 / 60.0;
+  let dt = input.delta_time;
   let source_velocity = src[index_of(cell, grid.size)];
   let backtrace = clamp(p - dt * source_velocity, 0.5 / vec2f(grid.size), 1.0 - 0.5 / vec2f(grid.size));
-  var velocity = 0.98 * sample_velocity(backtrace);
+  var velocity = pow(0.98, input.step_scale) * sample_velocity(backtrace);
 
   let weight_a = emitter_weight(p, input.idle_a, aspect);
   let weight_b = emitter_weight(p, input.idle_b, aspect);
-  let time = f32(input.step) / 60.0;
+  let time = input.time;
   let tangent_a = vec2f(0.28 * 0.73 * cos(0.73 * time), 0.22 * 1.09 * cos(1.09 * time + 0.4));
   let tangent_b = vec2f(0.26 * 0.61 * cos(0.61 * time + 3.14159265), 0.24 * 0.97 * cos(0.97 * time + 2.1));
   velocity += dt * (weight_a * (2.6 * tangent_a + 2.0 * vec2f(-tangent_a.y, tangent_a.x))
@@ -139,7 +142,7 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 
   if (input.pointer_active > 0.0) {
     let weight = segment_weight(p, input.pointer_from, input.pointer_to, input.pointer_radius_squared, aspect);
-    velocity += weight * input.pointer_velocity * 0.8;
+    velocity += weight * input.pointer_velocity * 0.8 * input.step_scale;
   }
 
   let speed = length(velocity);
@@ -164,10 +167,33 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 }
 `;
 
+export const inkDiffuseVelocityShader = common + /* wgsl */ `
+@group(0) @binding(0) var<uniform> grid: Grid;
+@group(0) @binding(1) var<uniform> input: Input;
+@group(0) @binding(2) var<storage, read> src: array<vec2f>;
+@group(0) @binding(3) var<storage, read_write> dst: array<vec2f>;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  if (any(id.xy >= grid.size)) { return; }
+  let p = vec2i(id.xy);
+  let average = 0.25 * (
+    src[index_of(p + vec2i(-1, 0), grid.size)] +
+    src[index_of(p + vec2i(1, 0), grid.size)] +
+    src[index_of(p + vec2i(0, -1), grid.size)] +
+    src[index_of(p + vec2i(0, 1), grid.size)]
+  );
+  // A bounded blend gives stable local diffusion at every supported speed.
+  let amount = 1.0 - exp(-input.viscosity * input.delta_time);
+  dst[index_of(p, grid.size)] = mix(src[index_of(p, grid.size)], average, amount);
+}
+`;
+
 export const inkVorticityShader = common + /* wgsl */ `@group(0) @binding(0) var<uniform> grid: Grid;
 @group(0) @binding(1) var<storage, read> src: array<vec2f>;
 @group(0) @binding(2) var<storage, read> curl: array<f32>;
 @group(0) @binding(3) var<storage, read_write> dst: array<vec2f>;
+@group(0) @binding(4) var<uniform> input: Input;
 
 @compute @workgroup_size(8, 8)
 fn main(@builtin(global_invocation_id) id: vec3u) {
@@ -184,7 +210,7 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
   force *= 20.0 * center;
   force.y *= -1.0;
 
-  var velocity = src[index_of(p, grid.size)] + force / 60.0;
+  var velocity = src[index_of(p, grid.size)] + force * input.delta_time;
   let speed = length(velocity);
   if (speed > 2.5) { velocity *= 2.5 / speed; }
   dst[index_of(p, grid.size)] = velocity;
@@ -302,14 +328,14 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
   let cell = vec2i(id.xy);
   let p = cell_uv(cell, grid.dye_size);
   let aspect = f32(grid.size.x) / f32(grid.size.y);
-  let backtrace = clamp(p - sample_velocity(p) / 60.0, 0.5 / vec2f(grid.dye_size), 1.0 - 0.5 / vec2f(grid.dye_size));
-  var density = 0.97 * sample_dye(backtrace);
+  let backtrace = clamp(p - sample_velocity(p) * input.delta_time, 0.5 / vec2f(grid.dye_size), 1.0 - 0.5 / vec2f(grid.dye_size));
+  var density = pow(0.97, input.step_scale) * sample_dye(backtrace);
 
-  density += emitter_weight(p, input.idle_a, aspect) * 0.12;
-  density += emitter_weight(p, input.idle_b, aspect) * 0.115;
+  density += emitter_weight(p, input.idle_a, aspect) * 0.12 * input.step_scale;
+  density += emitter_weight(p, input.idle_b, aspect) * 0.115 * input.step_scale;
   if (input.pointer_active > 0.0) {
     let weight = segment_weight(p, input.pointer_from, input.pointer_to, input.pointer_radius_squared, aspect);
-    density += weight * 0.35;
+    density += weight * 0.35 * input.step_scale;
   }
 
   dst[index_of(cell, grid.dye_size)] = clamp(density, 0.0, 4.0);

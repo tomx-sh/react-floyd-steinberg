@@ -6,6 +6,7 @@ import {
   inkAdvectDyeShader,
   inkAdvectVelocityShader,
   inkCurlShader,
+  inkDiffuseVelocityShader,
   inkDivergenceShader,
   inkPressureShader,
   inkProjectShader,
@@ -15,6 +16,7 @@ import { createCheckedModule } from "./webgpu";
 
 const computeShaders = {
   advectVelocity: inkAdvectVelocityShader,
+  diffuseVelocity: inkDiffuseVelocityShader,
   curl: inkCurlShader,
   vorticity: inkVorticityShader,
   divergence: inkDivergenceShader,
@@ -89,8 +91,8 @@ export function createInkSimulation(device: GPUDevice, pipelines: InkPipelines, 
     const curl = buffer("Ink curl", cells * 4, storage);
     const divergence = buffer("Ink divergence", cells * 4, storage);
     const decay = [buffer("Ink pressure decay", 4, uniform), buffer("Ink pressure retain", 4, uniform)];
-    device.queue.writeBuffer(decay[0], 0, new Float32Array([0.8]));
     device.queue.writeBuffer(decay[1], 0, new Float32Array([1]));
+    const decayData = new Float32Array(1);
     const bindings = (pipeline: GPUComputePipeline | GPURenderPipeline, buffers: GPUBuffer[]) =>
       device.createBindGroup({
         layout: pipeline.getBindGroupLayout(0),
@@ -99,8 +101,9 @@ export function createInkSimulation(device: GPUDevice, pipelines: InkPipelines, 
     const p = pipelines.compute;
     const pair = (fn: (i: number) => GPUBindGroup) => [fn(0), fn(1)];
     const advectGroups = pair(i => bindings(p.advectVelocity, [grid, inputBuffer, velocity[i], velocity[1 - i]]));
+    const diffuseGroups = pair(i => bindings(p.diffuseVelocity, [grid, inputBuffer, velocity[i], velocity[1 - i]]));
     const curlGroups = pair(i => bindings(p.curl, [grid, velocity[i], curl]));
-    const vorticityGroups = pair(i => bindings(p.vorticity, [grid, velocity[i], curl, velocity[1 - i]]));
+    const vorticityGroups = pair(i => bindings(p.vorticity, [grid, velocity[i], curl, velocity[1 - i], inputBuffer]));
     const divergenceGroups = pair(i => bindings(p.divergence, [grid, velocity[i], divergence]));
     const pressureGroups = decay.map(decayBuffer => pair(i =>
       bindings(p.pressure, [grid, decayBuffer, pressure[i], divergence, pressure[1 - i]])));
@@ -112,8 +115,8 @@ export function createInkSimulation(device: GPUDevice, pipelines: InkPipelines, 
     let velocityIndex = 0;
     let dyeIndex = 0;
     let pressureIndex = 0;
-    let step = 0;
-    let lastInputStep = -1000;
+    let time = 0;
+    let lastInputTime = Number.NEGATIVE_INFINITY;
     const inputData = new ArrayBuffer(80);
     const input = new DataView(inputData);
     const setPair = (offset: number, value: readonly number[]) => {
@@ -125,18 +128,24 @@ export function createInkSimulation(device: GPUDevice, pipelines: InkPipelines, 
       displayParameters,
       pattern,
       dispose,
-      step(pointer: StirInput, interactionRadius: number) {
+      step(pointer: StirInput, interactionRadius: number, simulationSpeed: number, viscosity: number) {
+        const stepScale = clamp(simulationSpeed, 0, 2, 0.6);
+        if (stepScale === 0) {
+          pointer.consumeStep();
+          return;
+        }
+        const deltaTime = stepScale / 60;
+        const diffusion = clamp(viscosity, 0, 20, 20);
         const active = pointer.active;
-        if (active) lastInputStep = step;
-        const time = step / 60;
-        const sinceInput = step - lastInputStep;
-        const idle = sinceInput < 90 ? 0.15 : 0.15 + 0.85 * Math.min(1, (sinceInput - 90) / 60);
-        const ramp = Math.min(1, (step + 1) / 24);
+        if (active) lastInputTime = time;
+        const sinceInput = time - lastInputTime;
+        const idle = sinceInput < 1.5 ? 0.15 : 0.15 + 0.85 * Math.min(1, sinceInput - 1.5);
+        const ramp = Math.min(1, (time + deltaTime) / 0.4);
         let pointerVelocity = pointer.velocity;
         if (active && Math.hypot(...pointerVelocity) < 0.02) {
           pointerVelocity = [0.16 * Math.cos(time * 5), 0.16 * Math.sin(time * 5)];
         }
-        input.setUint32(0, step, true);
+        input.setFloat32(0, time, true);
         input.setFloat32(4, active ? 1 : 0, true);
         setPair(8, pointer.from);
         setPair(16, pointer.to);
@@ -148,7 +157,12 @@ export function createInkSimulation(device: GPUDevice, pipelines: InkPipelines, 
         input.setFloat32(56, ramp * idle, true);
         input.setFloat32(60, 0.0055, true);
         input.setFloat32(64, clamp(interactionRadius, 0.01, 0.3, Math.sqrt(0.002)) ** 2, true);
+        input.setFloat32(68, deltaTime, true);
+        input.setFloat32(72, diffusion, true);
+        input.setFloat32(76, stepScale, true);
         device.queue.writeBuffer(inputBuffer, 0, inputData);
+        decayData[0] = 0.8 ** stepScale;
+        device.queue.writeBuffer(decay[0], 0, decayData);
         const encoder = device.createCommandEncoder({ label: "Ink simulation step" });
         const dispatch = (name: PassName, group: GPUBindGroup, w = width, h = height) => {
           const pass = encoder.beginComputePass({ label: `Ink ${name}` });
@@ -159,6 +173,10 @@ export function createInkSimulation(device: GPUDevice, pipelines: InkPipelines, 
         };
         dispatch("advectVelocity", advectGroups[velocityIndex]);
         velocityIndex = 1 - velocityIndex;
+        if (diffusion > 0) {
+          dispatch("diffuseVelocity", diffuseGroups[velocityIndex]);
+          velocityIndex = 1 - velocityIndex;
+        }
         dispatch("curl", curlGroups[velocityIndex]);
         dispatch("vorticity", vorticityGroups[velocityIndex]);
         velocityIndex = 1 - velocityIndex;
@@ -173,7 +191,7 @@ export function createInkSimulation(device: GPUDevice, pipelines: InkPipelines, 
         dyeIndex = 1 - dyeIndex;
         // Submit each fixed step separately so later uniform writes cannot replace its input.
         device.queue.submit([encoder.finish()]);
-        step++;
+        time += deltaTime;
         pointer.consumeStep();
       },
       render(context: GPUCanvasContext) {
