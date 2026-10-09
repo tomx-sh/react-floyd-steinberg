@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { clamp, positiveInteger, normalizedColor, colorDependency } from "./canvasUtils";
 import { generateBlueNoisePattern } from "./blueNoise";
 import type {
   FloydSteinbergColor,
@@ -20,7 +21,6 @@ const SIMULATION_SPEED = 0.5;
 const PRESSURE_ITERATIONS = 16;
 const DEFAULT_DARK: FloydSteinbergColor = [0, 0, 0, 1];
 const DEFAULT_LIGHT: FloydSteinbergColor = [1, 1, 1, 1];
-let cssColorContext: CanvasRenderingContext2D | undefined;
 
 export type BlueNoiseFluidQuantity = "velocity" | "temperature";
 
@@ -184,14 +184,6 @@ function getPipelines(device: GPUDevice, format: GPUTextureFormat, setup: FluidS
   return pending;
 }
 
-function clamp(value: number, minimum: number, maximum: number, fallback: number): number {
-  return Number.isFinite(value) ? Math.min(maximum, Math.max(minimum, value)) : fallback;
-}
-
-function positiveInteger(value: number | undefined, fallback: number): number {
-  return Math.max(1, Math.round(Number.isFinite(value) ? (value as number) : fallback));
-}
-
 function resolveIntrinsicSize(width?: number, height?: number): { width: number; height: number } {
   if (width !== undefined && height !== undefined) {
     return { width: positiveInteger(width, 900), height: positiveInteger(height, 600) };
@@ -205,47 +197,6 @@ function resolveIntrinsicSize(width?: number, height?: number): { width: number;
     return { width: Math.max(1, Math.round((resolvedHeight * 3) / 2)), height: resolvedHeight };
   }
   return { width: 900, height: 600 };
-}
-
-function normalizedCssColor(color: string): readonly [number, number, number, number] {
-  const value = color.trim();
-  if (!cssColorContext) {
-    const canvas = document.createElement("canvas");
-    canvas.width = 1;
-    canvas.height = 1;
-    cssColorContext = canvas.getContext("2d", { willReadFrequently: true }) ?? undefined;
-  }
-  if (!cssColorContext) {
-    throw new Error("CSS colors could not be resolved because a 2D canvas context is unavailable.");
-  }
-
-  cssColorContext.fillStyle = "#010203";
-  cssColorContext.fillStyle = value;
-  const firstResult = cssColorContext.fillStyle;
-  cssColorContext.fillStyle = "#040506";
-  cssColorContext.fillStyle = value;
-  if (!value || cssColorContext.fillStyle !== firstResult) {
-    throw new Error(`Invalid CSS color: ${JSON.stringify(color)}.`);
-  }
-
-  cssColorContext.clearRect(0, 0, 1, 1);
-  cssColorContext.fillRect(0, 0, 1, 1);
-  const [red, green, blue, alpha] = cssColorContext.getImageData(0, 0, 1, 1).data;
-  return [red / 255, green / 255, blue / 255, alpha / 255];
-}
-
-function normalizedColor(color: FloydSteinbergColor): readonly [number, number, number, number] {
-  if (typeof color === "string") return normalizedCssColor(color);
-  return [
-    clamp(color[0], 0, 1, 0),
-    clamp(color[1], 0, 1, 0),
-    clamp(color[2], 0, 1, 0),
-    clamp(color[3] ?? 1, 0, 1, 1),
-  ];
-}
-
-function colorDependency(color: FloydSteinbergColor): string {
-  return typeof color === "string" ? `css:${color}` : `tuple:${color.join(",")}`;
 }
 
 function destroyResources(resources: RenderResources | undefined) {

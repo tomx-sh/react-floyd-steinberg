@@ -178,6 +178,42 @@ import { BlueNoisePaint } from "react-floyd-steinberg";
 
 It accepts the same props as `BlueNoiseFluid`, except `quantity` is `"pigment"` (default) or `"velocity"`. Moving the pointer stirs both modes and adds paint in pigment mode. `swirlStrength` controls the automatic stirring (`0…3`, default `1`). Viscosity defaults to `2`. Open `#/blue-noise-paint` in the playground to adjust these controls or reset the paint.
 
+## Blue-noise ink
+
+`BlueNoiseInk` ports the [vgpu Interactive Fluid example](https://vgpu.sh/examples/fluid)
+directly to WebGPU, without a vgpu dependency. It retains the reference's 60 Hz
+fixed timestep, velocity advection, vorticity confinement, three pressure
+iterations with warm-start decay, projected boundaries, two moving emitters,
+and pointer/touch strokes. RGB dye becomes one scalar ink density, reducing dye
+memory by 75%. The reference's density tone mapping and vignette feed our fixed
+blue-noise threshold tile.
+
+```tsx
+import { BlueNoiseInk } from "react-floyd-steinberg";
+
+<BlueNoiseInk
+  width={960}
+  height={540}
+  simulationSize={128}
+  pixelScale={2}
+  contrast={1}
+  dark="black"
+  light="white"
+  style={{ width: "100%", height: "auto" }}
+/>
+```
+
+The default velocity grid is `128 × 72`, with dye at `512 × 288`. Like the
+reference, the simulation uses a fixed 16:9 domain stretched to the canvas;
+resizing preserves the fluid. `simulationSize` sets the longest velocity-grid
+dimension (`32…384`, default `128`), and dye stays four times finer on each axis.
+The default canvas is `960 × 540`. `interactionRadius` defaults to `sqrt(0.002)`
+in canvas-height units. It accepts the common canvas, color, seed, sizing,
+contrast, inversion, pattern, and callback props, with no `quantity` or
+`viscosity` modes. Display controls update without resetting the simulation;
+changing `simulationSize` or `seed` restarts it. Hidden tabs pause the simulation.
+Open `#/blue-noise-ink` in the playground to try it.
+
 ## Continuous cellular automaton example
 
 `BlueNoiseLenia` runs a Lenia continuous cellular automaton on the GPU, then applies the same fixed blue-noise threshold tile. The reusable `LENIA_SPECIES_PRESETS` catalog stores species cells and dynamics, while `LENIA_SCENE_PRESETS` stores reusable arrangements and orientations. The demo advances the selected preset at four steps per second and interpolates the two latest states at display rate, keeping motion slow and smooth without destabilizing the creatures.

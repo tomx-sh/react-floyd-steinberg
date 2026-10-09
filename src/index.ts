@@ -21,6 +21,7 @@ export {
   type BlueNoisePaintProps,
   type BlueNoisePaintQuantity,
 } from "./BlueNoisePaint";
+export { BlueNoiseInk, type BlueNoiseInkProps } from "./BlueNoiseInk";
 export {
   BlueNoiseLenia,
   type BlueNoiseLeniaProps,

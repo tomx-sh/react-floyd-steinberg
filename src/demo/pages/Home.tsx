@@ -1,5 +1,11 @@
 const examples = [
   {
+    href: "#/blue-noise-ink",
+    eyebrow: "Interactive fluid",
+    title: "Blue-noise ink",
+    description: "Moving ink sources and pointer strokes feed swirling currents with fine fluid detail.",
+  },
+  {
     href: "#/floyd-steinberg",
     eyebrow: "Image dithering",
     title: "Stochastic Floyd–Steinberg",
