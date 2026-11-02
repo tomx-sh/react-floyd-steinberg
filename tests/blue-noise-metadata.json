@@ -1,0 +1,22 @@
+{
+  "algorithm": "void-and-cluster",
+  "sigma": 1,
+  "seed": 1592594996,
+  "tiles": [
+    {
+      "size": 64,
+      "relaxationSwaps": 169,
+      "sha256": "b42afd38fa0f6a5f8c70b74d2465ecbc3c7d648803074cd15bd5ff654ef33874"
+    },
+    {
+      "size": 128,
+      "relaxationSwaps": 699,
+      "sha256": "8fa8239398f941b72c32cc2896318bb138c13275d8c3e36b98c6ed70d1d6799c"
+    },
+    {
+      "size": 256,
+      "relaxationSwaps": 2804,
+      "sha256": "76c4a9373b48547d1ef4d78b5c9add72935966b0253db0ac848ae62a68762644"
+    }
+  ]
+}

@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { generateBlueNoisePattern } from "./blueNoise";
+import { getBlueNoisePattern, MAX_BLUE_NOISE_PATTERN_SIZE } from "./blueNoisePattern";
 import type {
   FloydSteinbergColor,
   FloydSteinbergProps,
@@ -24,7 +24,7 @@ export interface BlueNoiseWaveProps
     FloydSteinbergProps,
     "alphaBackground" | "crossOrigin" | "fit" | "randomness" | "src" | "threshold"
   > {
-  /** Width and height of the square, tileable threshold pattern in dither cells. Defaults to 64; clamped to 8–128. */
+  /** Width and height of the square, tileable threshold pattern in dither cells. Defaults to 64; clamped to 8–256. */
   patternSize?: number;
 }
 
@@ -250,12 +250,12 @@ export function BlueNoiseWave(
 
     const setup = async () => {
       const resolvedScale = positiveInteger(pixelScale, 1);
-      const resolvedPatternSize = Math.round(clamp(patternSize, 8, 128, 64));
+      const resolvedPatternSize = Math.round(clamp(patternSize, 8, MAX_BLUE_NOISE_PATTERN_SIZE, 64));
       const logicalWidth = Math.ceil(renderSize.cssWidth / resolvedScale);
       const logicalHeight = Math.ceil(renderSize.cssHeight / resolvedScale);
       const cellWidth = (resolvedScale * renderSize.width) / renderSize.cssWidth;
       const cellHeight = (resolvedScale * renderSize.height) / renderSize.cssHeight;
-      const pattern = generateBlueNoisePattern(resolvedPatternSize, seed);
+      const pattern = getBlueNoisePattern(resolvedPatternSize, seed);
       const device = await getSharedDevice(powerPreference);
       if (cancelled) return;
 

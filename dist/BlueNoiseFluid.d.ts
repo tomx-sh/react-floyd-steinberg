@@ -1,7 +1,7 @@
 import { FloydSteinbergProps } from './FloydSteinberg';
 export type BlueNoiseFluidQuantity = "velocity" | "temperature";
 export interface BlueNoiseFluidProps extends Omit<FloydSteinbergProps, "alphaBackground" | "crossOrigin" | "fit" | "randomness" | "src" | "threshold"> {
-    /** Width and height of the square blue-noise tile in dither cells. Defaults to 64. */
+    /** Width and height of the square blue-noise tile in dither cells. Defaults to 64; clamped to 8–256. */
     patternSize?: number;
     /** Maximum fluid-grid dimension. Defaults to 192; clamped to 32–384. */
     simulationSize?: number;

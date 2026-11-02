@@ -1,6 +1,6 @@
 {
   "name": "react-floyd-steinberg",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "description": "A WebGPU stochastic Floyd-Steinberg image dithering component for React.",
   "type": "module",
@@ -21,8 +21,10 @@
     }
   },
   "scripts": {
+    "generate:blue-noise": "bun scripts/generate-blue-noise.ts",
+    "test": "bun test",
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "bun run generate:blue-noise && tsc --noEmit && vite build",
     "build:demo": "vite build --mode demo",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"

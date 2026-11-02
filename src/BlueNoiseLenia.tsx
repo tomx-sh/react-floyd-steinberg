@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { generateBlueNoisePattern } from "./blueNoise";
+import { getBlueNoisePattern, MAX_BLUE_NOISE_PATTERN_SIZE } from "./blueNoisePattern";
 import type {
   FloydSteinbergColor,
   FloydSteinbergProps,
@@ -36,7 +36,7 @@ export interface BlueNoiseLeniaProps
     FloydSteinbergProps,
     "alphaBackground" | "crossOrigin" | "fit" | "randomness" | "src" | "threshold"
   > {
-  /** Width and height of the square blue-noise tile in dither cells. Defaults to 64. */
+  /** Width and height of the square blue-noise tile in dither cells. Defaults to 64; clamped to 8–256. */
   patternSize?: number;
   /** Longest automaton-grid dimension. Defaults to 256; clamped to 64–384. */
   simulationSize?: number;
@@ -436,7 +436,7 @@ export function BlueNoiseLenia(
       const speciesPreset = getLeniaSpeciesPreset(scenePreset?.species ?? props.species);
       const resolvedSpatialScale = resolveLeniaSpatialScale(props.spatialScale);
       const resolvedSimulationSize = Math.round(clamp(props.simulationSize, 64, 384, 256));
-      let resolvedPatternSize = Math.round(clamp(props.patternSize, 8, 128, 64));
+      let resolvedPatternSize = Math.round(clamp(props.patternSize, 8, MAX_BLUE_NOISE_PATTERN_SIZE, 64));
       const initialSize = sizeRef.current ?? {
         width: canvas.width,
         height: canvas.height,
@@ -450,7 +450,7 @@ export function BlueNoiseLenia(
       let logicalWidth = Math.ceil(initialSize.cssWidth / Math.max(1, Math.round(props.pixelScale)));
       let logicalHeight = Math.ceil(initialSize.cssHeight / Math.max(1, Math.round(props.pixelScale)));
 
-      const pattern = generateBlueNoisePattern(resolvedPatternSize, props.seed);
+      const pattern = getBlueNoisePattern(resolvedPatternSize, props.seed);
       const device = await getSharedDevice(props.powerPreference);
       if (cancelled) return;
 
@@ -478,7 +478,7 @@ export function BlueNoiseLenia(
       });
       const patternBuffer = device.createBuffer({
         label: "Tileable blue-noise ranks",
-        size: 128 * 128 * 4,
+        size: MAX_BLUE_NOISE_PATTERN_SIZE ** 2 * 4,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
       });
       const initialStateData = createLeniaInitialState(
@@ -683,11 +683,11 @@ export function BlueNoiseLenia(
               rebuildSimulation(nextWidth, nextHeight);
             }
           }
-          const nextPatternSize = Math.round(clamp(props.patternSize, 8, 128, 64));
+          const nextPatternSize = Math.round(clamp(props.patternSize, 8, MAX_BLUE_NOISE_PATTERN_SIZE, 64));
           if (nextPatternSize !== resolvedPatternSize) {
             resolvedPatternSize = nextPatternSize;
             parameterView.setUint32(72, resolvedPatternSize, true);
-            device.queue.writeBuffer(patternBuffer, 0, generateBlueNoisePattern(nextPatternSize, props.seed));
+            device.queue.writeBuffer(patternBuffer, 0, getBlueNoisePattern(nextPatternSize, props.seed));
           }
 
           const pointer = pointerRef.current;

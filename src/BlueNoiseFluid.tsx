@@ -6,7 +6,7 @@ import {
   useState,
 } from "react";
 import { clamp, positiveInteger, normalizedColor, colorDependency } from "./canvasUtils";
-import { generateBlueNoisePattern } from "./blueNoise";
+import { getBlueNoisePattern, MAX_BLUE_NOISE_PATTERN_SIZE } from "./blueNoisePattern";
 import type {
   FloydSteinbergColor,
   FloydSteinbergProps,
@@ -29,7 +29,7 @@ export interface BlueNoiseFluidProps
     FloydSteinbergProps,
     "alphaBackground" | "crossOrigin" | "fit" | "randomness" | "src" | "threshold"
   > {
-  /** Width and height of the square blue-noise tile in dither cells. Defaults to 64. */
+  /** Width and height of the square blue-noise tile in dither cells. Defaults to 64; clamped to 8–256. */
   patternSize?: number;
   /** Maximum fluid-grid dimension. Defaults to 192; clamped to 32–384. */
   simulationSize?: number;
@@ -442,7 +442,7 @@ export function FluidCanvas(
     const setupGpu = async () => {
       const props = propsRef.current;
       const resolvedSimulationSize = Math.round(clamp(props.simulationSize, 32, 384, 192));
-      let resolvedPatternSize = Math.round(clamp(props.patternSize, 8, 128, 64));
+      let resolvedPatternSize = Math.round(clamp(props.patternSize, 8, MAX_BLUE_NOISE_PATTERN_SIZE, 64));
       const initialSize = sizeRef.current ?? {
         width: canvas.width,
         height: canvas.height,
@@ -455,7 +455,7 @@ export function FluidCanvas(
       let simulationHeight = aspect >= 1 ? Math.max(16, Math.round(resolvedSimulationSize / aspect)) : resolvedSimulationSize;
       let logicalWidth = Math.ceil(initialSize.cssWidth / Math.max(1, Math.round(props.pixelScale)));
       let logicalHeight = Math.ceil(initialSize.cssHeight / Math.max(1, Math.round(props.pixelScale)));
-      const pattern = generateBlueNoisePattern(resolvedPatternSize, props.seed);
+      const pattern = getBlueNoisePattern(resolvedPatternSize, props.seed);
       const device = await getSharedDevice(props.powerPreference);
       if (cancelled) return;
 
@@ -488,7 +488,7 @@ export function FluidCanvas(
       });
       const patternBuffer = device.createBuffer({
         label: "Tileable blue-noise ranks",
-        size: 128 * 128 * 4,
+        size: MAX_BLUE_NOISE_PATTERN_SIZE ** 2 * 4,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
       });
       const textureDescriptor: GPUTextureDescriptor = {
@@ -747,10 +747,10 @@ export function FluidCanvas(
               rebuildSimulation(nextWidth, nextHeight);
             }
           }
-          const nextPatternSize = Math.round(clamp(props.patternSize, 8, 128, 64));
+          const nextPatternSize = Math.round(clamp(props.patternSize, 8, MAX_BLUE_NOISE_PATTERN_SIZE, 64));
           if (nextPatternSize !== resolvedPatternSize) {
             resolvedPatternSize = nextPatternSize;
-            device.queue.writeBuffer(patternBuffer, 0, generateBlueNoisePattern(nextPatternSize, props.seed));
+            device.queue.writeBuffer(patternBuffer, 0, getBlueNoisePattern(nextPatternSize, props.seed));
           }
 
           const deltaTime =

@@ -1,7 +1,7 @@
 import { FloydSteinbergProps } from './FloydSteinberg';
 import { LeniaPosition, LeniaScenePresetId, LeniaSpeciesId } from './leniaPresets';
 export interface BlueNoiseLeniaProps extends Omit<FloydSteinbergProps, "alphaBackground" | "crossOrigin" | "fit" | "randomness" | "src" | "threshold"> {
-    /** Width and height of the square blue-noise tile in dither cells. Defaults to 64. */
+    /** Width and height of the square blue-noise tile in dither cells. Defaults to 64; clamped to 8–256. */
     patternSize?: number;
     /** Longest automaton-grid dimension. Defaults to 256; clamped to 64–384. */
     simulationSize?: number;

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { generateBlueNoisePattern } from "./blueNoise";
+import { getBlueNoisePattern, MAX_BLUE_NOISE_PATTERN_SIZE } from "./blueNoisePattern";
 import { clamp, colorDependency, normalizedColor, positiveInteger } from "./canvasUtils";
 import type { BlueNoiseFluidProps } from "./BlueNoiseFluid";
 import type { FloydSteinbergRenderInfo } from "./FloydSteinberg";
@@ -180,9 +180,9 @@ export function BlueNoiseInk({
           const scale = positiveInteger(props.pixelScale, 2);
           const logicalWidth = Math.ceil(size.cssWidth / scale);
           const logicalHeight = Math.ceil(size.cssHeight / scale);
-          const nextPatternSize = Math.round(clamp(props.patternSize, 8, 128, 64));
+          const nextPatternSize = Math.round(clamp(props.patternSize, 8, MAX_BLUE_NOISE_PATTERN_SIZE, 64));
           if (nextPatternSize !== currentPatternSize) {
-            device.queue.writeBuffer(simulation.pattern, 0, generateBlueNoisePattern(nextPatternSize, props.seed));
+            device.queue.writeBuffer(simulation.pattern, 0, getBlueNoisePattern(nextPatternSize, props.seed));
             currentPatternSize = nextPatternSize;
           }
           const nextColorKey = `${colorDependency(props.dark)}|${colorDependency(props.light)}`;

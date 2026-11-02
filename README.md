@@ -7,18 +7,18 @@ The source can be an image URL, `File`/`Blob`, `ImageBitmap`, image element, or 
 ## Install
 
 ```sh
-npm install github:<github-user>/react-floyd-steinberg#v0.6.0
-pnpm add github:<github-user>/react-floyd-steinberg#v0.6.0
-bun add github:<github-user>/react-floyd-steinberg#v0.6.0
+npm install github:<github-user>/react-floyd-steinberg#v0.7.0
+pnpm add github:<github-user>/react-floyd-steinberg#v0.7.0
+bun add github:<github-user>/react-floyd-steinberg#v0.7.0
 ```
 
 Replace `<github-user>` with the repository owner's GitHub username. The equivalent full Git URL works with all three package managers:
 
 ```sh
-npm install git+https://github.com/<github-user>/react-floyd-steinberg.git#v0.6.0
+npm install git+https://github.com/<github-user>/react-floyd-steinberg.git#v0.7.0
 ```
 
-A tag such as `#v0.6.0` is recommended so application installs remain reproducible. You can instead select:
+A tag such as `#v0.7.0` is recommended so application installs remain reproducible. You can instead select:
 
 - `#main` for the latest commit on the main branch.
 - `#<commit-sha>` for one exact commit.
@@ -29,7 +29,7 @@ The dependency will be stored in the consuming application's `package.json`, for
 ```json
 {
   "dependencies": {
-    "react-floyd-steinberg": "github:<github-user>/react-floyd-steinberg#v0.6.0"
+    "react-floyd-steinberg": "github:<github-user>/react-floyd-steinberg#v0.7.0"
   }
 }
 ```
@@ -119,9 +119,38 @@ export function DitheredWave() {
 }
 ```
 
-`patternSize` sets the width and height of the square pattern in dither cells and is clamped to `8…128`. Pattern generation wraps both axes as a torus, then the shader repeats that tile across the canvas. It starts with an exact rank permutation and refines nested threshold levels through several toroidal Gaussian cluster-to-void swap passes. Because `pixelScale` is measured in CSS pixels, both the dots and the complete tile keep a stable CSS size across display densities and responsive resizing. The pattern is deterministic for a given `patternSize` and `seed` and is cached after its first generation.
+`patternSize` sets the width and height of the square pattern in dither cells and
+is clamped to `8…256`. Both generators wrap on a torus, so refinement covers tile
+seams. The runtime fallback starts with filtered seeded noise and refines nested
+threshold slices; the shipped default tiles use the full offline method below.
+Because `pixelScale` is measured in CSS pixels, dots and tile periods keep a
+stable CSS size across display densities and resizing. A pattern is deterministic
+for a given size and seed, and cached after generation or decoding.
 
 The component accepts the relevant sizing, color, inversion, seed, canvas, and callback props from `FloydSteinberg`. It omits image and error-diffusion props such as `src`, `fit`, `crossOrigin`, `alphaBackground`, `randomness`, and `threshold`.
+
+All blue-noise components ship precomputed 64×64, 128×128, and 256×256 tiles
+for the default seed (`0x5eed1234`). `bun run build` generates these offline with
+a full progressive [void-and-cluster algorithm](https://cv.ulichney.com/papers/1993-void-cluster.pdf):
+it relaxes an initial binary slice to convergence, then places every threshold
+rank individually, including the inverse minority pattern above 50% coverage.
+The toroidal Gaussian filter uses σ=1.0, favoring isolated pixels over
+the more connected midtone shapes produced by wider filters. Integer energies avoid floating-point drift,
+and indexed heaps make the complete 256×256 tile practical to generate in a few
+seconds. The filter choice follows [Ulichney's filter study](https://cv.ulichney.com/papers/1994-filter-design.pdf).
+
+The browser only decodes and caches the packed tiles; the offline generator is
+not bundled. Other seeds and unbaked sizes retain the procedural runtime
+generator. Compared with the earlier 64/128 precomputed package, including the
+larger tile adds approximately 132 KB gzip. Pixel scale, simulation resolution,
+shaders, and animation timing are independent of the threshold tile and remain
+the same. A 256-cell tile repeats every 512 CSS pixels at `pixelScale={2}`.
+
+Run `bun run generate:blue-noise` to regenerate only the packed source tiles and
+their checksum metadata. `bun run build` also regenerates them and refreshes the
+committed `dist` package. `bun test` checks rank permutations, checksums,
+determinism against exhaustive searches, and reduced density clumping and
+adjacent-pixel pairs compared with the earlier runtime generator.
 
 ## Interactive fluid example
 

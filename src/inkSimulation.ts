@@ -1,4 +1,5 @@
 // Adapted from the vgpu fluid example; see THIRD_PARTY_NOTICES.md.
+import { MAX_BLUE_NOISE_PATTERN_SIZE } from "./blueNoisePattern";
 import { clamp } from "./canvasUtils";
 import type { StirInput } from "./inkPointer";
 import {
@@ -83,7 +84,7 @@ export function createInkSimulation(device: GPUDevice, pipelines: InkPipelines, 
     device.queue.writeBuffer(grid, 0, new Uint32Array([width, height, dyeWidth, dyeHeight]));
     const inputBuffer = buffer("Ink input", 80, uniform);
     const displayParameters = buffer("Ink display", 64, uniform);
-    const pattern = buffer("Ink blue-noise ranks", 128 * 128 * 4, storage | GPUBufferUsage.COPY_DST);
+    const pattern = buffer("Ink blue-noise ranks", MAX_BLUE_NOISE_PATTERN_SIZE ** 2 * 4, storage | GPUBufferUsage.COPY_DST);
     const velocity = [buffer("Ink velocity A", cells * 8, storage), buffer("Ink velocity B", cells * 8, storage)];
     // A scalar dye replaces the original RGBA field, using one quarter of its memory.
     const dye = [buffer("Ink dye A", cells * 16 * 4, storage), buffer("Ink dye B", cells * 16 * 4, storage)];
